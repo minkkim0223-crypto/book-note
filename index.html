@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#0d9488">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Cute+Font&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -25,7 +25,9 @@
     <!-- ZXing 바코드 스캐너 -->
     <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
-        * { font-family: 'Noto Sans KR', sans-serif; }
+        * { font-family: 'Gamja Flower', 'Noto Sans KR', sans-serif; }
+        html { font-size: 18px; }
+        body { font-size: 18px; }
 
         /* 사이드바 */
         .sidebar-nav { display: none; flex-direction: column; width: 220px; min-height: 100vh; background: linear-gradient(180deg, #0d9488 0%, #0891b2 100%); }
@@ -793,7 +795,7 @@
                     {confirmDeleteId && (
                         <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                             <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center shadow-xl">
-                                <div class="flex justify-center mb-2"><BookCharacter size={80} mood="sad" /></div>
+                                <div class="flex justify-center mb-2"><img src="https://github.com/minkkim0223-crypto/book-note/blob/main/icon-2.png?raw=true" style={{width:"80px",height:"80px",objectFit:"contain"}} /></div>
                                 <p class="font-black text-gray-800 mb-1">책을 삭제할까요?</p>
                                 <p class="text-xs text-gray-400 mb-5">모든 챕터 기록과 리뷰가 함께 삭제됩니다.</p>
                                 <div class="flex gap-2">
@@ -833,7 +835,7 @@
                     {/* 빈 상태 */}
                     {filtered.length === 0 && (
                         <div class="empty-state">
-                            <div class="flex justify-center"><BookCharacter size={100} mood={books.length === 0 ? "happy" : "sad"} /></div>
+                            <div class="flex justify-center"><img src="https://github.com/minkkim0223-crypto/book-note/blob/main/icon-2.png?raw=true" style={{width:"120px",height:"120px",objectFit:"contain"}} /></div>
                             <p class="font-black text-gray-600 text-lg mb-1 mt-2">
                                 {books.length === 0 ? "아직 책이 없어요!" : "해당하는 책이 없어요"}
                             </p>
@@ -1519,7 +1521,7 @@
             };
 
             return (
-                <div class="flex flex-col h-full" style={{fontFamily:"'Noto Sans KR', sans-serif"}}>
+                <div class="flex flex-col h-full" style={{fontFamily:"'Gamja Flower', 'Noto Sans KR', sans-serif"}}>
                     {/* 모바일 헤더 */}
                     <header class="bg-gradient-to-r from-teal-600 to-cyan-500 text-white p-4 shadow-md flex justify-between items-center z-20 md:hidden flex-shrink-0">
                         <h1 class="text-xl font-black">책읽는 하루 📚</h1>
