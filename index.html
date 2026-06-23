@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>책읽는 하루 📚</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Cute+Font&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- ZXing 바코드 스캐너 -->
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+    <style>
+        * { font-family: 'Noto Sans KR', sans-serif; }
+
+        /* 사이드바 */
+        .sidebar-nav { display: none; flex-direction: column; width: 220px; min-height: 100vh; background: linear-gradient(180deg, #0d9488 0%, #0891b2 100%); }
+        .bottom-nav { display: flex; }
+        @media (min-width: 768px) {
+            .sidebar-nav { display: flex; }
+            .bottom-nav { display: none; }
+            #root { max-width: 100%; width: 100%; height: 100vh; }
+        }
+        @media (min-width: 1024px) { .sidebar-nav { width: 240px; } }
+
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 13px 20px; color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 14px; font-weight: 600; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.12); color: white; }
+        .sidebar-item.active { background: rgba(255,255,255,0.2); color: white; border-left-color: white; }
+        .sidebar-item .icon { font-size: 18px; width: 26px; text-align: center; }
+
+        /* 토스트 */
+        @keyframes fadeInUp { 0% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
+        .toast-animation { animation: fadeInUp 0.4s ease forwards; }
+
+        /* 책 카드 쌓기 효과 */
+        .book-stack { position: relative; }
+        .book-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .book-card:hover { transform: translateY(-4px) rotate(1deg); box-shadow: 6px 8px 16px rgba(0,0,0,0.2); }
+
+        /* 진행률 바 */
+        .progress-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #0d9488, #0891b2); border-radius: 999px; transition: width 0.5s ease; }
+
+        /* 별점 */
+        .star { font-size: 24px; cursor: pointer; transition: transform 0.1s; }
+        .star:hover { transform: scale(1.2); }
+
+        /* 스캐너 */
+        #scanner-video { width: 100%; border-radius: 12px; }
+
+        /* 캘린더 */
+        .cal-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 500; position: relative; }
+        .cal-day:hover { background: #ccfbf1; }
+        .cal-day.today { background: #0891b2; color: white; font-weight: 700; }
+        .cal-day.has-read { background: #ccfbf1; color: #0d9488; font-weight: 700; }
+        .cal-day.today.has-read { background: #0d9488; color: white; }
+        .cal-day.has-finished img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #0d9488; }
+
+        /* 귀여운 빈상태 */
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-state .emoji { font-size: 64px; margin-bottom: 16px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* 책 표지 플레이스홀더 */
+        .book-cover-placeholder { background: linear-gradient(135deg, #ccfbf1 0%, #a5f3fc 100%); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+
+        /* 탭 토글 */
+        .view-toggle { display: flex; background: #f1f5f9; border-radius: 999px; padding: 3px; }
+        .view-toggle button { flex: 1; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; transition: all 0.2s; }
+        .view-toggle button.active { background: white; color: #0d9488; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .view-toggle button:not(.active) { color: #94a3b8; }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center h-screen m-0 overflow-hidden">
+    <div id="root" class="w-full max-w-md bg-white h-full shadow-2xl overflow-hidden flex flex-col relative md:max-w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+        // ─── Firebase Config ───────────────────────────────────────
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAxza4TY1roOPtqaoLOgPNjdsg11RVKvhQ",
+            authDomain: "book-note-10409.firebaseapp.com",
+            projectId: "book-note-10409",
+            storageBucket: "book-note-10409.firebasestorage.app",
+            messagingSenderId: "250409006509",
+            appId: "1:250409006509:web:f8f1fdd7f9c85ce6e6dd24"
+        };
+        const GOOGLE_CLIENT_ID = "647503400558-acegpfk8j1nust43ges5gur57qassv8c.apps.googleusercontent.com";
+        const KAKAO_API_KEY = "4e359009d945c0833753c9f50ae2985b";
+
+        let db, auth;
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.firestore();
+            auth = firebase.auth();
+        } catch(e) { console.error("Firebase 초기화 오류:", e); }
+
+        // ─── 네비게이션 ────────────────────────────────────────────
+        const NAV_ITEMS = [
+            { id: "library",  icon: "📚", label: "서재"   },
+            { id: "add",      icon: "➕", label: "책 등록" },
+            { id: "stats",    icon: "📊", label: "통계"   },
+            { id: "settings", icon: "⚙️", label: "설정"   },
+        ];
+
+        // ─── 유틸 ──────────────────────────────────────────────────
+        const formatDate = (d) => {
+            const dt = d || new Date();
+            return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+        };
+
+        // ─── 별점 컴포넌트 ────────────────────────────────────────
+        function StarRating({ value, onChange, readonly }) {
+            const [hover, setHover] = useState(0);
+            return (
+                <div class="flex gap-1">
+                    {[1,2,3,4,5].map(s => (
+                        <span key={s}
+                            class={`star ${readonly ? "cursor-default" : ""}`}
+                            style={{ color: (hover||value) >= s ? "#f59e0b" : "#d1d5db" }}
+                            onClick={() => !readonly && onChange && onChange(s)}
+                            onMouseEnter={() => !readonly && setHover(s)}
+                            onMouseLeave={() => !readonly && setHover(0)}>
+                            ★
+                        </span>
+                    ))}
+                </div>
+            );
+        }
+
+        // ─── 책 표지 이미지 ───────────────────────────────────────
+        function BookCover({ cover, title, size = "full" }) {
+            const sizeClass = size === "sm" ? "w-12 h-16" : size === "md" ? "w-20 h-28" : "w-full h-full";
+            if (cover) return <img src={cover} alt={title} class={`${sizeClass} object-cover rounded`} />;
+            return (
+                <div class={`${sizeClass} book-cover-placeholder rounded`}>
+                    <span>📖</span>
+                </div>
+            );
+        }
+
+        // ─── 바코드 스캐너 모달 ───────────────────────────────────
+        function ScannerModal({ onDetected, onClose }) {
+            const videoRef = useRef(null);
+            const [error, setError] = useState("");
+            const [manualIsbn, setManualIsbn] = useState("");
+            const codeReaderRef = useRef(null);
+
+            useEffect(() => {
+                if (!window.ZXing) { setError("스캐너 라이브러리 로딩 중..."); return; }
+                try {
+                    const codeReader = new ZXing.BrowserMultiFormatReader();
+                    codeReaderRef.current = codeReader;
+                    codeReader.listVideoInputDevices().then(devices => {
+                        if (!devices.length) { setError("카메라를 찾을 수 없습니다."); return; }
+                        const deviceId = devices[devices.length - 1].deviceId;
+                        codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
+                            if (result) { onDetected(result.getText()); }
+                        });
+                    }).catch(e => setError("카메라 권한을 허용해주세요."));
+                } catch(e) { setError("스캐너 초기화 오류: " + e.message); }
+                return () => { if (codeReaderRef.current) codeReaderRef.current.reset(); };
+            }, []);
+
+            return (
+                <div class="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl w-full max-w-sm p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-gray-800 text-lg">📷 바코드 스캔</h3>
+                            <button onClick={onClose} class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                        </div>
+                        {error ? (
+                            <div class="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4">{error}</div>
+                        ) : (
+                            <div class="mb-4 relative">
+                                <video ref={videoRef} id="scanner-video" autoPlay muted playsInline></video>
+                                <div class="absolute inset-0 border-2 border-teal-400 rounded-xl pointer-events-none opacity-50"></div>
+                                <p class="text-xs text-center text-gray-400 mt-2">책 뒷면 바코드에 카메라를 가져다 대세요</p>
+                            </div>
+                        )}
+                        <div class="border-t pt-4">
+                            <p class="text-xs font-bold text-gray-500 mb-2">직접 ISBN 입력</p>
+                            <div class="flex gap-2">
+                                <input type="text" placeholder="ISBN 13자리 입력" class="flex-1 p-2 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                    value={manualIsbn} onChange={e => setManualIsbn(e.target.value)}
+                                    onKeyPress={e => { if(e.key==="Enter" && manualIsbn.trim()) onDetected(manualIsbn.trim()); }} />
+                                <button onClick={() => manualIsbn.trim() && onDetected(manualIsbn.trim())}
+                                    class="px-4 bg-teal-600 text-white rounded-lg font-bold text-sm">검색</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── 책 검색 결과 확인 모달 ───────────────────────────────
+        function BookConfirmModal({ bookData, onConfirm, onCancel }) {
+            const [inputMode, setInputMode] = useState("bulk"); // bulk | individual
+            const [bulkText, setBulkText] = useState("");
+            const [chapters, setChapters] = useState([{ title: "" }]);
+
+            const addChapter = () => setChapters(p => [...p, { title: "" }]);
+            const updateChapter = (i, val) => setChapters(p => p.map((c,idx) => idx===i ? {...c, title:val} : c));
+            const removeChapter = (i) => setChapters(p => p.filter((_,idx) => idx!==i));
+
+            // 일괄 입력 → 개별 목록 변환
+            const applyBulk = () => {
+                const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
+                if (lines.length > 0) {
+                    setChapters(lines.map(t => ({ title: t })));
+                    setInputMode("individual");
+                }
+            };
+
+            const handleConfirm = () => {
+                let validChapters = [];
+                if (inputMode === "bulk") {
+                    validChapters = bulkText.split("\n").map(l => l.trim()).filter(Boolean).map(t => ({ title: t }));
+                } else {
+                    validChapters = chapters.filter(c => c.title.trim());
+                }
+                onConfirm({ ...bookData, chapters: validChapters });
+            };
+
+            return (
+                <div class="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-4 overflow-y-auto">
+                    <div class="bg-white rounded-2xl w-full max-w-sm p-5 my-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-gray-800 text-lg">📖 책 정보 확인</h3>
+                            <button onClick={onCancel} class="text-gray-400 text-2xl">×</button>
+                        </div>
+
+                        {/* 책 정보 */}
+                        <div class="flex gap-3 mb-5 p-3 bg-teal-50 rounded-xl border border-teal-100">
+                            <div class="w-16 flex-shrink-0">
+                                <BookCover cover={bookData.cover} title={bookData.title} size="md" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-black text-gray-800 text-sm leading-tight mb-1">{bookData.title}</p>
+                                <p class="text-xs text-gray-500 mb-0.5">{bookData.author}</p>
+                                <p class="text-xs text-gray-400">{bookData.publisher}</p>
+                                {bookData.totalPages > 0 && <p class="text-xs text-teal-600 font-bold mt-1">총 {bookData.totalPages}p</p>}
+                            </div>
+                        </div>
+
+                        {/* 목차 입력 */}
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <p class="text-sm font-black text-gray-700">목차 입력 <span class="text-gray-400 font-normal text-xs">(선택사항)</span></p>
+                                <div class="view-toggle" style={{padding:"2px"}}>
+                                    <button class={inputMode==="bulk"?"active":""} onClick={() => setInputMode("bulk")}
+                                        style={{padding:"4px 10px", fontSize:"11px"}}>일괄 입력</button>
+                                    <button class={inputMode==="individual"?"active":""} onClick={() => setInputMode("individual")}
+                                        style={{padding:"4px 10px", fontSize:"11px"}}>개별 입력</button>
+                                </div>
+                            </div>
+
+                            {inputMode === "bulk" ? (
+                                <div>
+                                    <p class="text-xs text-gray-400 mb-2">챕터명을 한 줄에 하나씩 입력하세요</p>
+                                    <textarea rows="6" placeholder={"1장 습관의 힘\n2장 작은 변화\n3장 복리의 법칙\n..."}
+                                        class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                        value={bulkText} onChange={e => setBulkText(e.target.value)}></textarea>
+                                    {bulkText.trim() && (
+                                        <button onClick={applyBulk}
+                                            class="mt-2 w-full py-2 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold border border-teal-200 hover:bg-teal-100">
+                                            ✨ {bulkText.split("\n").filter(l=>l.trim()).length}개 챕터 적용하고 확인하기
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div>
+                                    <div class="space-y-2 max-h-52 overflow-y-auto mb-2">
+                                        {chapters.map((ch, i) => (
+                                            <div key={i} class="flex gap-2">
+                                                <span class="text-xs text-gray-400 font-bold w-5 mt-2.5 flex-shrink-0">{i+1}</span>
+                                                <input type="text" placeholder={`챕터 ${i+1} 제목`}
+                                                    class="flex-1 p-2.5 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-1 focus:ring-teal-400"
+                                                    value={ch.title} onChange={e => updateChapter(i, e.target.value)} />
+                                                <button onClick={() => removeChapter(i)} class="text-red-400 text-sm px-1 hover:text-red-600">×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={addChapter}
+                                        class="w-full py-2 rounded-lg border border-dashed border-teal-300 text-teal-600 text-xs font-bold hover:bg-teal-50">
+                                        + 챕터 추가
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onClick={onCancel} class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm">취소</button>
+                            <button onClick={handleConfirm} class="flex-1 py-3 rounded-xl bg-teal-600 text-white font-bold text-sm">서재에 추가 📚</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── 챕터 기록 화면 ───────────────────────────────────────
+        function ChapterRecord({ book, chapter, onBack, onSave }) {
+            const existing = chapter.record || {};
+            const [keywords, setKeywords] = useState(existing.keywords || "");
+            const [summary, setSummary] = useState(existing.summary || "");
+            const [myThought, setMyThought] = useState(existing.myThought || "");
+
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <button onClick={onBack} class="mb-4 text-sm text-gray-500 font-bold flex items-center gap-1">◀ 뒤로</button>
+                    <div class="flex items-center gap-3 mb-5 p-3 bg-teal-50 rounded-xl border border-teal-100">
+                        <div class="w-10 h-14 flex-shrink-0">
+                            <BookCover cover={book.cover} title={book.title} size="sm" />
+                        </div>
+                        <div>
+                            <p class="text-xs text-teal-600 font-bold">{book.title}</p>
+                            <p class="font-black text-gray-800">{chapter.title}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <label class="block text-xs font-black text-teal-700 mb-2">🔑 핵심 키워드</label>
+                            <input type="text" placeholder="예: 습관, 작은 실행, 복리의 법칙"
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                value={keywords} onChange={e => setKeywords(e.target.value)} />
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <label class="block text-xs font-black text-teal-700 mb-2">📝 내용 요약</label>
+                            <textarea rows="4" placeholder="이 챕터의 핵심 내용을 내 언어로 요약해보세요."
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                value={summary} onChange={e => setSummary(e.target.value)}></textarea>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <label class="block text-xs font-black text-purple-700 mb-2">💭 나의 생각</label>
+                            <textarea rows="4" placeholder="이 챕터를 읽고 든 나만의 생각, 적용할 점, 질문 등을 자유롭게 써보세요."
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                                value={myThought} onChange={e => setMyThought(e.target.value)}></textarea>
+                        </div>
+                    </div>
+
+                    <button onClick={() => onSave({ keywords, summary, myThought, readDate: formatDate() })}
+                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-teal-600 hover:bg-teal-700 shadow-md text-base">
+                        기록 저장하기 ✨
+                    </button>
+                </div>
+            );
+        }
+
+        // ─── 완독 리뷰 화면 ───────────────────────────────────────
+        function FinishReview({ book, onBack, onSave }) {
+            const existing = book.review || {};
+            const [finalSummary, setFinalSummary] = useState(existing.finalSummary || "");
+            const [impression, setImpression] = useState(existing.impression || "");
+            const [rating, setRating] = useState(existing.rating || 0);
+
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <button onClick={onBack} class="mb-4 text-sm text-gray-500 font-bold flex items-center gap-1">◀ 뒤로</button>
+                    <h2 class="text-2xl font-black text-gray-800 mb-1">완독 리뷰 🏁</h2>
+                    <p class="text-sm text-gray-500 mb-5">이 책과의 여정을 마무리해보세요.</p>
+
+                    <div class="flex gap-3 mb-5 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
+                        <div class="w-16 flex-shrink-0">
+                            <BookCover cover={book.cover} title={book.title} size="md" />
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-black text-gray-800 text-sm mb-1">{book.title}</p>
+                            <p class="text-xs text-gray-500 mb-3">{book.author}</p>
+                            <StarRating value={rating} onChange={setRating} />
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <label class="block text-xs font-black text-teal-700 mb-2">📖 최종 요약</label>
+                            <textarea rows="5" placeholder="이 책 전체를 내 언어로 한번 정리해보세요. 핵심 메시지, 중요한 개념들을 담아보세요."
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                value={finalSummary} onChange={e => setFinalSummary(e.target.value)}></textarea>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <label class="block text-xs font-black text-purple-700 mb-2">💬 나의 감상</label>
+                            <textarea rows="4" placeholder="이 책이 내게 준 것, 느낀 점, 추천하고 싶은 이유 등을 자유롭게 써보세요."
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                                value={impression} onChange={e => setImpression(e.target.value)}></textarea>
+                        </div>
+                    </div>
+
+                    <button onClick={() => onSave({ finalSummary, impression, rating, completedAt: formatDate() })}
+                        disabled={!rating}
+                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-gradient-to-r from-teal-600 to-cyan-500 shadow-md text-base disabled:opacity-50">
+                        완독 완료! 🎉
+                    </button>
+                    {!rating && <p class="text-center text-xs text-gray-400 mt-2">별점을 선택해주세요</p>}
+                </div>
+            );
+        }
+
+        // ─── 책 상세 화면 ─────────────────────────────────────────
+        function BookDetail({ book, onBack, onUpdateBook, onDeleteBook, showToast }) {
+            const [view, setView] = useState("chapters"); // chapters | review
+            const [selectedChapter, setSelectedChapter] = useState(null);
+            const [showFinishReview, setShowFinishReview] = useState(false);
+
+            const chapters = book.chapters || [];
+            const doneCount = chapters.filter(c => c.record && c.record.readDate).length;
+            const progress = chapters.length > 0 ? Math.round((doneCount / chapters.length) * 100) : 0;
+
+            const handleSaveChapterRecord = (record) => {
+                const updated = {
+                    ...book,
+                    chapters: book.chapters.map(c =>
+                        c.id === selectedChapter.id ? { ...c, record } : c
+                    ),
+                    readingSessions: [
+                        ...(book.readingSessions || []),
+                        { date: record.readDate, chapterId: selectedChapter.id, chapterTitle: selectedChapter.title }
+                    ]
+                };
+                onUpdateBook(updated);
+                setSelectedChapter(null);
+                showToast("챕터 기록이 저장되었습니다! ✨");
+            };
+
+            const handleSaveReview = (review) => {
+                const updated = { ...book, review, status: "done", finishedAt: formatDate() };
+                onUpdateBook(updated);
+                setShowFinishReview(false);
+                showToast("완독을 축하합니다! 🎉🎉🎉");
+            };
+
+            if (selectedChapter) {
+                return <ChapterRecord book={book} chapter={selectedChapter}
+                    onBack={() => setSelectedChapter(null)} onSave={handleSaveChapterRecord} />;
+            }
+            if (showFinishReview) {
+                return <FinishReview book={book} onBack={() => setShowFinishReview(false)} onSave={handleSaveReview} />;
+            }
+
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <button onClick={onBack} class="text-sm text-gray-500 font-bold flex items-center gap-1">◀ 서재로</button>
+                        <button onClick={() => onDeleteBook && onDeleteBook(book.id)}
+                            class="text-xs text-red-400 font-bold px-3 py-1.5 bg-red-50 rounded-lg hover:bg-red-100 border border-red-100">🗑️ 삭제</button>
+                    </div>
+
+                    {/* 책 헤더 */}
+                    <div class="flex gap-4 mb-5">
+                        <div class="w-24 h-32 flex-shrink-0 rounded-xl overflow-hidden shadow-lg">
+                            <BookCover cover={book.cover} title={book.title} size="full" />
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs text-teal-600 font-bold mb-1">{book.author}</p>
+                            <h2 class="font-black text-gray-800 text-lg leading-tight mb-2">{book.title}</h2>
+                            <p class="text-xs text-gray-400 mb-3">{book.publisher}</p>
+                            {book.status === "done" ? (
+                                <span class="inline-flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full">✅ 완독</span>
+                            ) : (
+                                <span class="inline-flex items-center gap-1 text-xs font-bold bg-teal-100 text-teal-700 px-3 py-1 rounded-full">📖 읽는 중</span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 진행률 */}
+                    {chapters.length > 0 && (
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
+                            <div class="flex justify-between text-sm mb-2 font-bold text-gray-700">
+                                <span>읽기 진행률</span>
+                                <span class="text-teal-600">{doneCount}/{chapters.length} 챕터 ({progress}%)</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style={{width:`${progress}%`}}></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 탭 */}
+                    <div class="view-toggle mb-4">
+                        <button class={view==="chapters"?"active":""} onClick={() => setView("chapters")}>챕터 기록</button>
+                        <button class={view==="review"?"active":""} onClick={() => setView("review")}>완독 리뷰</button>
+                    </div>
+
+                    {view === "chapters" && (
+                        <div class="space-y-2">
+                            {chapters.length === 0 ? (
+                                <div class="empty-state">
+                                    <div class="emoji">📄</div>
+                                    <p class="text-gray-500 font-bold">등록된 챕터가 없어요</p>
+                                    <p class="text-gray-400 text-sm mt-1">책 등록 시 목차를 추가해보세요</p>
+                                </div>
+                            ) : chapters.map((ch, i) => {
+                                const isDone = ch.record && ch.record.readDate;
+                                return (
+                                    <div key={ch.id} onClick={() => setSelectedChapter(ch)}
+                                        class={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${isDone ? "bg-teal-50 border-teal-200" : "bg-white border-gray-200 hover:border-teal-300"}`}>
+                                        <div class={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${isDone ? "bg-teal-500 text-white" : "bg-gray-100 text-gray-400"}`}>
+                                            {isDone ? "✓" : i+1}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class={`font-bold text-sm ${isDone ? "text-teal-800" : "text-gray-800"}`}>{ch.title}</p>
+                                            {isDone && ch.record.keywords && (
+                                                <p class="text-xs text-teal-600 mt-0.5 truncate">🔑 {ch.record.keywords}</p>
+                                            )}
+                                        </div>
+                                        <span class="text-gray-300 text-sm">▶</span>
+                                    </div>
+                                );
+                            })}
+                            {chapters.length > 0 && progress === 100 && book.status !== "done" && (
+                                <button onClick={() => setShowFinishReview(true)}
+                                    class="w-full py-4 mt-2 rounded-xl font-black text-white bg-gradient-to-r from-teal-600 to-cyan-500 shadow-md text-base">
+                                    🏁 모든 챕터 완료! 완독 리뷰 작성하기
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {view === "review" && (
+                        <div>
+                            {book.review ? (
+                                <div class="space-y-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <StarRating value={book.review.rating} readonly />
+                                        <span class="text-sm font-bold text-gray-600">{book.review.rating}/5</span>
+                                    </div>
+                                    {book.review.finalSummary && (
+                                        <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
+                                            <p class="text-xs font-black text-teal-700 mb-2">📖 최종 요약</p>
+                                            <p class="text-sm text-gray-700 whitespace-pre-wrap">{book.review.finalSummary}</p>
+                                        </div>
+                                    )}
+                                    {book.review.impression && (
+                                        <div class="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                                            <p class="text-xs font-black text-purple-700 mb-2">💬 나의 감상</p>
+                                            <p class="text-sm text-gray-700 whitespace-pre-wrap">{book.review.impression}</p>
+                                        </div>
+                                    )}
+                                    <button onClick={() => setShowFinishReview(true)} class="w-full py-3 rounded-xl border border-teal-300 text-teal-600 font-bold text-sm">수정하기</button>
+                                </div>
+                            ) : (
+                                <div class="empty-state">
+                                    <div class="emoji">🏁</div>
+                                    <p class="text-gray-500 font-bold">아직 완독 리뷰가 없어요</p>
+                                    <p class="text-gray-400 text-sm mt-1 mb-4">모든 챕터를 읽고 나서 리뷰를 작성해보세요</p>
+                                    <button onClick={() => setShowFinishReview(true)}
+                                        class="px-6 py-3 rounded-xl bg-teal-600 text-white font-bold text-sm">지금 리뷰 작성하기</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ─── 서재 화면 ────────────────────────────────────────────
+        function LibraryScreen({ books, onSelectBook, onDeleteBook }) {
+            const [viewMode, setViewMode] = useState("stack"); // stack | list
+            const [filter, setFilter] = useState("전체");
+            const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+            const filters = ["전체", "읽는 중", "완독"];
+            const filtered = books.filter(b => {
+                if (filter === "전체") return true;
+                if (filter === "읽는 중") return b.status !== "done";
+                if (filter === "완독") return b.status === "done";
+                return true;
+            });
+
+            const handleDelete = (e, bookId) => {
+                e.stopPropagation();
+                setConfirmDeleteId(bookId);
+            };
+
+            return (
+                <div class="p-5 md:p-8 max-w-4xl mx-auto w-full">
+                    {/* 삭제 확인 모달 */}
+                    {confirmDeleteId && (
+                        <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center shadow-xl">
+                                <div class="text-4xl mb-3">🗑️</div>
+                                <p class="font-black text-gray-800 mb-1">책을 삭제할까요?</p>
+                                <p class="text-xs text-gray-400 mb-5">모든 챕터 기록과 리뷰가 함께 삭제됩니다.</p>
+                                <div class="flex gap-2">
+                                    <button onClick={() => setConfirmDeleteId(null)} class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm">취소</button>
+                                    <button onClick={() => { onDeleteBook(confirmDeleteId); setConfirmDeleteId(null); }}
+                                        class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600">삭제</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 헤더 */}
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h2 class="text-2xl font-black text-gray-800">나의 서재 📚</h2>
+                            <p class="text-sm text-gray-400 mt-0.5">총 {books.length}권의 책</p>
+                        </div>
+                        <div class="view-toggle">
+                            <button class={viewMode==="stack"?"active":""} onClick={() => setViewMode("stack")}>쌓아보기</button>
+                            <button class={viewMode==="list"?"active":""} onClick={() => setViewMode("list")}>리스트형</button>
+                        </div>
+                    </div>
+
+                    {/* 필터 */}
+                    <div class="flex gap-2 mb-5">
+                        {filters.map(f => (
+                            <button key={f} onClick={() => setFilter(f)}
+                                class={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${filter===f ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                                {f} {f==="전체" ? `(${books.length})` : f==="읽는 중" ? `(${books.filter(b=>b.status!=="done").length})` : `(${books.filter(b=>b.status==="done").length})`}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 빈 상태 */}
+                    {filtered.length === 0 && (
+                        <div class="empty-state">
+                            <div class="emoji">🐣</div>
+                            <p class="font-black text-gray-600 text-lg mb-1">아직 책이 없어요!</p>
+                            <p class="text-gray-400 text-sm">➕ 책 등록 버튼을 눌러<br/>첫 번째 책을 추가해보세요</p>
+                        </div>
+                    )}
+
+                    {/* 쌓아보기 */}
+                    {viewMode === "stack" && filtered.length > 0 && (
+                        <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {filtered.map(book => {
+                                const chapters = book.chapters || [];
+                                const doneCount = chapters.filter(c => c.record && c.record.readDate).length;
+                                const progress = chapters.length > 0 ? Math.round((doneCount / chapters.length) * 100) : 0;
+                                return (
+                                    <div key={book.id} class="book-card flex flex-col relative group">
+                                        <div class="aspect-[2/3] relative" onClick={() => onSelectBook(book)}>
+                                            <BookCover cover={book.cover} title={book.title} size="full" />
+                                            {book.status === "done" && (
+                                                <div class="absolute top-1 right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-black">✓</div>
+                                            )}
+                                            {/* 삭제 버튼 (호버 시 표시) */}
+                                            <button onClick={(e) => handleDelete(e, book.id)}
+                                                class="absolute top-1 left-1 w-6 h-6 bg-red-500 rounded-full items-center justify-center text-white text-xs font-black hidden group-hover:flex">
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div class="p-2 bg-white" onClick={() => onSelectBook(book)}>
+                                            <p class="text-xs font-bold text-gray-700 truncate leading-tight">{book.title}</p>
+                                            {chapters.length > 0 && (
+                                                <div class="progress-bar mt-1">
+                                                    <div class="progress-fill" style={{width:`${progress}%`}}></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* 리스트형 */}
+                    {viewMode === "list" && filtered.length > 0 && (
+                        <div class="space-y-3">
+                            {filtered.map(book => {
+                                const chapters = book.chapters || [];
+                                const doneCount = chapters.filter(c => c.record && c.record.readDate).length;
+                                const progress = chapters.length > 0 ? Math.round((doneCount / chapters.length) * 100) : 0;
+                                return (
+                                    <div key={book.id}
+                                        class="flex gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:border-teal-200">
+                                        <div class="w-14 h-20 flex-shrink-0 rounded-lg overflow-hidden shadow" onClick={() => onSelectBook(book)}>
+                                            <BookCover cover={book.cover} title={book.title} size="full" />
+                                        </div>
+                                        <div class="flex-1 min-w-0" onClick={() => onSelectBook(book)}>
+                                            <p class="font-black text-gray-800 text-sm leading-tight mb-0.5">{book.title}</p>
+                                            <p class="text-xs text-gray-400 mb-2">{book.author}</p>
+                                            {book.status === "done" ? (
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✅ 완독</span>
+                                                    {book.review && <StarRating value={book.review.rating} readonly />}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <div class="flex justify-between text-xs mb-1 text-gray-500 font-bold">
+                                                        <span>진행률</span><span class="text-teal-600">{progress}%</span>
+                                                    </div>
+                                                    <div class="progress-bar">
+                                                        <div class="progress-fill" style={{width:`${progress}%`}}></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div class="flex flex-col items-center gap-2 justify-center">
+                                            <span class="text-gray-200 text-sm" onClick={() => onSelectBook(book)}>▶</span>
+                                            <button onClick={(e) => handleDelete(e, book.id)}
+                                                class="text-red-400 text-xs font-bold px-2 py-1 bg-red-50 rounded-lg hover:bg-red-100">삭제</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ─── 책 등록 화면 ─────────────────────────────────────────
+        function AddBookScreen({ onBookAdded, showToast }) {
+            const [showScanner, setShowScanner] = useState(false);
+            const [isLoading, setIsLoading] = useState(false);
+            const [foundBook, setFoundBook] = useState(null);
+            const [searchQuery, setSearchQuery] = useState("");
+
+            // Google Books에서 목차 자동 파싱
+            const fetchGoogleChapters = async (title, isbn) => {
+                try {
+                    const q = isbn ? `isbn:${isbn}` : `intitle:${encodeURIComponent(title)}`;
+                    const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
+                    const gData = await gRes.json();
+                    if (!gData.items || !gData.items.length) return { chapters: [], totalPages: 0 };
+                    const info = gData.items[0].volumeInfo;
+                    const totalPages = info.pageCount || 0;
+                    // tableOfContents는 Google Books에서 제공 안 함 → 목차 없으면 빈 배열
+                    // 대신 categories/subtitle을 힌트로 활용, 목차는 빈 상태로 반환
+                    return { chapters: [], totalPages: info.pageCount || 0, cover: (info.imageLinks && info.imageLinks.thumbnail) ? info.imageLinks.thumbnail : "" };
+                } catch(e) { return { chapters: [], totalPages: 0 }; }
+            };
+
+            const buildBookFromKakao = async (b) => {
+                const google = await fetchGoogleChapters(b.title, b.isbn);
+                return {
+                    isbn: b.isbn,
+                    title: b.title,
+                    author: b.authors ? b.authors.join(", ") : "",
+                    publisher: b.publisher,
+                    cover: b.thumbnail || google.cover || "",
+                    totalPages: google.totalPages || 0,
+                    autoChapters: google.chapters,
+                    status: "reading"
+                };
+            };
+
+            const searchByISBN = async (isbn) => {
+                setIsLoading(true);
+                setShowScanner(false);
+                try {
+                    // Kakao Books API
+                    const kakaoRes = await fetch(`https://dapi.kakao.com/v3/search/book?query=${isbn}&target=isbn`, {
+                        headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` }
+                    });
+                    const kakaoData = await kakaoRes.json();
+                    if (kakaoData.documents && kakaoData.documents.length > 0) {
+                        const book = await buildBookFromKakao(kakaoData.documents[0]);
+                        setFoundBook(book);
+                        setIsLoading(false);
+                        return;
+                    }
+                    // Google Books fallback
+                    const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+                    const gData = await gRes.json();
+                    if (gData.items && gData.items.length > 0) {
+                        const info = gData.items[0].volumeInfo;
+                        setFoundBook({
+                            isbn,
+                            title: info.title,
+                            author: info.authors ? info.authors.join(", ") : "",
+                            publisher: info.publisher || "",
+                            cover: info.imageLinks ? info.imageLinks.thumbnail : "",
+                            totalPages: info.pageCount || 0,
+                            autoChapters: [],
+                            status: "reading"
+                        });
+                        setIsLoading(false);
+                        return;
+                    }
+                    showToast("책을 찾을 수 없습니다. ISBN을 확인해주세요.");
+                } catch(e) {
+                    showToast("검색 중 오류가 발생했습니다.");
+                }
+                setIsLoading(false);
+            };
+
+            const searchByTitle = async () => {
+                if (!searchQuery.trim()) return;
+                setIsLoading(true);
+                try {
+                    const kakaoRes = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(searchQuery)}&size=5`, {
+                        headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` }
+                    });
+                    const kakaoData = await kakaoRes.json();
+                    if (kakaoData.documents && kakaoData.documents.length > 0) {
+                        const book = await buildBookFromKakao(kakaoData.documents[0]);
+                        setFoundBook(book);
+                    } else {
+                        showToast("책을 찾을 수 없습니다.");
+                    }
+                } catch(e) { showToast("검색 중 오류가 발생했습니다."); }
+                setIsLoading(false);
+            };
+
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <h2 class="text-2xl font-black text-gray-800 mb-1">책 등록 ➕</h2>
+                    <p class="text-sm text-gray-500 mb-5">바코드 스캔 또는 검색으로 책을 추가하세요.</p>
+
+                    {/* 바코드 스캔 버튼 */}
+                    <button onClick={() => setShowScanner(true)}
+                        class="w-full py-4 mb-4 rounded-xl bg-teal-600 text-white font-black text-base flex items-center justify-center gap-2 hover:bg-teal-700 transition-colors shadow-md">
+                        <span class="text-xl">📷</span> 바코드 스캔으로 등록
+                    </button>
+
+                    {/* 제목 검색 */}
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <p class="text-xs font-black text-gray-500 mb-3">책 제목으로 검색</p>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="책 제목을 입력하세요..."
+                                class="flex-1 p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                onKeyPress={e => e.key==="Enter" && searchByTitle()} />
+                            <button onClick={searchByTitle} class="px-5 bg-teal-600 text-white rounded-lg font-bold text-sm hover:bg-teal-700">검색</button>
+                        </div>
+                    </div>
+
+                    {isLoading && (
+                        <div class="text-center py-12">
+                            <div class="text-4xl mb-3 animate-bounce">🔍</div>
+                            <p class="text-gray-500 font-bold">책을 찾고 있어요...</p>
+                        </div>
+                    )}
+
+                    {showScanner && <ScannerModal onDetected={searchByISBN} onClose={() => setShowScanner(false)} />}
+                    {foundBook && (
+                        <BookConfirmModal
+                            bookData={foundBook}
+                            onConfirm={(bookWithChapters) => { onBookAdded(bookWithChapters); setFoundBook(null); setSearchQuery(""); }}
+                            onCancel={() => setFoundBook(null)}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // ─── 통계 화면 ────────────────────────────────────────────
+        function StatsScreen({ books }) {
+            const today = new Date();
+            const [calYear, setCalYear] = useState(today.getFullYear());
+            const [calMonth, setCalMonth] = useState(today.getMonth());
+            const [selectedDayInfo, setSelectedDayInfo] = useState(null);
+
+            const todayStr = formatDate(today);
+            const firstDay = new Date(calYear, calMonth, 1).getDay();
+            const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+            // 날짜별 독서 세션 맵
+            const sessionMap = useMemo(() => {
+                const map = {};
+                books.forEach(book => {
+                    (book.readingSessions || []).forEach(s => {
+                        if (!map[s.date]) map[s.date] = [];
+                        map[s.date].push({ bookTitle: book.title, chapterTitle: s.chapterTitle });
+                    });
+                    // 완독일에 책표지 추가
+                    if (book.finishedAt) {
+                        if (!map[book.finishedAt]) map[book.finishedAt] = [];
+                        map[book.finishedAt].push({ bookTitle: book.title, cover: book.cover, isFinished: true });
+                    }
+                });
+                return map;
+            }, [books]);
+
+            const prevMonth = () => { if (calMonth===0) { setCalMonth(11); setCalYear(y=>y-1); } else setCalMonth(m=>m-1); };
+            const nextMonth = () => { if (calMonth===11) { setCalMonth(0); setCalYear(y=>y+1); } else setCalMonth(m=>m+1); };
+
+            const days = [];
+            for (let i=0; i<firstDay; i++) days.push(null);
+            for (let d=1; d<=daysInMonth; d++) days.push(d);
+
+            const totalBooks = books.length;
+            const doneBooks = books.filter(b => b.status==="done").length;
+            const readingBooks = books.filter(b => b.status!=="done").length;
+            const totalChapters = books.reduce((sum,b) => sum + (b.chapters||[]).filter(c=>c.record&&c.record.readDate).length, 0);
+
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <h2 class="text-2xl font-black text-gray-800 mb-5">독서 통계 📊</h2>
+
+                    {/* 요약 카드 */}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        {[
+                            { label: "전체 책", value: totalBooks, icon: "📚", color: "teal" },
+                            { label: "완독", value: doneBooks, icon: "✅", color: "green" },
+                            { label: "읽는 중", value: readingBooks, icon: "📖", color: "blue" },
+                            { label: "읽은 챕터", value: totalChapters, icon: "📝", color: "purple" },
+                        ].map(stat => (
+                            <div key={stat.label} class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-center">
+                                <div class="text-2xl mb-1">{stat.icon}</div>
+                                <div class="text-2xl font-black text-gray-800">{stat.value}</div>
+                                <div class="text-xs text-gray-400 font-bold">{stat.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 독서 캘린더 */}
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <button onClick={prevMonth} class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 font-black text-lg">‹</button>
+                            <span class="font-black text-gray-800">{calYear}년 {calMonth+1}월 독서 기록</span>
+                            <button onClick={nextMonth} class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 font-black text-lg">›</button>
+                        </div>
+                        <div class="grid grid-cols-7 mb-2">
+                            {["일","월","화","수","목","금","토"].map((d,i) => (
+                                <div key={d} class={`text-center text-[10px] font-black py-1 ${i===0?"text-red-400":i===6?"text-blue-400":"text-gray-400"}`}>{d}</div>
+                            ))}
+                        </div>
+                        <div class="grid grid-cols-7 gap-y-1">
+                            {days.map((d, i) => {
+                                if (!d) return <div key={`e${i}`}></div>;
+                                const dateStr = `${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+                                const isToday = dateStr === todayStr;
+                                const sessions = sessionMap[dateStr] || [];
+                                const hasRead = sessions.length > 0;
+                                const finishedBook = sessions.find(s => s.isFinished);
+                                const dow = (firstDay + d - 1) % 7;
+
+                                return (
+                                    <div key={d} onClick={() => hasRead && setSelectedDayInfo({ date: dateStr, sessions })}
+                                        class={`cal-day mx-auto ${isToday ? "today" : ""} ${hasRead && !finishedBook ? "has-read" : ""} ${hasRead ? "cursor-pointer" : ""}`}>
+                                        {finishedBook ? (
+                                            finishedBook.cover
+                                                ? <img src={finishedBook.cover} alt={finishedBook.bookTitle} class="w-full h-full object-cover rounded-full border-2 border-teal-400" />
+                                                : <span class="text-lg">📗</span>
+                                        ) : (
+                                            <span class={`text-xs font-bold ${dow===0 && !isToday ? "text-red-400" : dow===6 && !isToday ? "text-blue-400" : ""}`}>{d}</span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div class="flex items-center gap-4 mt-4 text-xs text-gray-400 font-bold">
+                            <div class="flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-teal-100 border border-teal-300"></div> 독서한 날</div>
+                            <div class="flex items-center gap-1"><span>📗</span> 완독한 날</div>
+                        </div>
+                    </div>
+
+                    {/* 날짜 상세 팝업 */}
+                    {selectedDayInfo && (
+                        <div class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4" onClick={() => setSelectedDayInfo(null)}>
+                            <div class="bg-white rounded-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="font-black text-gray-800">{selectedDayInfo.date} 독서 기록</h3>
+                                    <button onClick={() => setSelectedDayInfo(null)} class="text-gray-400 text-2xl">×</button>
+                                </div>
+                                <div class="space-y-2">
+                                    {selectedDayInfo.sessions.map((s, i) => (
+                                        <div key={i} class="flex items-center gap-2 bg-teal-50 p-3 rounded-xl">
+                                            <span class="text-lg">{s.isFinished ? "🎉" : "📖"}</span>
+                                            <div>
+                                                <p class="text-sm font-bold text-gray-800">{s.bookTitle}</p>
+                                                {s.chapterTitle && <p class="text-xs text-gray-500">{s.chapterTitle}</p>}
+                                                {s.isFinished && <p class="text-xs text-teal-600 font-bold">완독!</p>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ─── 설정 화면 ────────────────────────────────────────────
+        function SettingsScreen({ user, signInWithGoogle, isLoggingIn }) {
+            return (
+                <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
+                    <h2 class="text-2xl font-black text-gray-800 mb-4">설정 ⚙️</h2>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-lg font-black text-gray-700 mb-4">계정 연결</h3>
+                        {user ? (
+                            <div class="bg-teal-50 p-4 rounded-xl border border-teal-200">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-12 h-12 rounded-full bg-teal-200 flex items-center justify-center text-2xl">📚</div>
+                                    <div>
+                                        <p class="font-black text-gray-800">{user.displayName || "독서가"} 님</p>
+                                        <p class="text-xs text-gray-500">{user.email}</p>
+                                    </div>
+                                </div>
+                                <p class="text-teal-700 font-bold text-sm mb-4">✅ 실시간 동기화 중입니다.</p>
+                                <button onClick={() => auth.signOut()} class="w-full py-2 bg-white border border-gray-300 rounded-xl text-gray-600 font-bold hover:bg-gray-50">로그아웃</button>
+                            </div>
+                        ) : (
+                            <div class="space-y-3">
+                                <p class="text-sm text-gray-500">Google 계정으로 로그인하면 모든 기기에서 독서 기록이 동기화됩니다.</p>
+                                {isLoggingIn ? (
+                                    <div class="w-full py-3 bg-gray-100 rounded-xl flex items-center justify-center gap-2 text-gray-500 font-bold text-sm">
+                                        <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        로그인 처리 중...
+                                    </div>
+                                ) : (
+                                    <button onClick={signInWithGoogle} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",width:"100%",padding:"12px",border:"1px solid #dadce0",borderRadius:"12px",background:"white",fontSize:"14px",fontWeight:"700",color:"#3c4043",cursor:"pointer",boxShadow:"0 1px 3px rgba(0,0,0,0.1)"}}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                        Google 계정으로 로그인
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ─── 메인 앱 ──────────────────────────────────────────────
+        function App() {
+            const [activeTab, setActiveTab] = useState("library");
+            const [user, setUser] = useState(null);
+            const [isLoggingIn, setIsLoggingIn] = useState(false);
+            const [books, setBooks] = useState([]);
+            const [selectedBook, setSelectedBook] = useState(null);
+            const [toastMessage, setToastMessage] = useState("");
+
+            const showToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(""), 3000); };
+
+            // Firebase Auth
+            useEffect(() => {
+                if (!auth) return;
+                const unsub = auth.onAuthStateChanged(cu => {
+                    if (cu) {
+                        setUser(cu); setIsLoggingIn(false);
+                        db.collection("users").doc(cu.uid).collection("books")
+                            .orderBy("createdAt", "desc")
+                            .onSnapshot(s => setBooks(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                    } else { setUser(null); setIsLoggingIn(false); }
+                });
+                return () => unsub();
+            }, []);
+
+            // GSI
+            const handleGoogleCredential = useCallback(async (response) => {
+                setIsLoggingIn(true);
+                try {
+                    const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+                    await auth.signInWithCredential(credential);
+                } catch(e) { console.error(e); setIsLoggingIn(false); }
+            }, []);
+
+            useEffect(() => {
+                if (user) return;
+                const init = () => {
+                    if (!window.google || !window.google.accounts) return;
+                    window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential, auto_select: false, ux_mode: "popup" });
+                };
+                if (window.google && window.google.accounts) init();
+                else { setTimeout(init, 1500); }
+            }, [handleGoogleCredential, user]);
+
+            const signInWithGoogle = () => {
+                if (!window.google || !window.google.accounts) { alert("잠시 후 다시 시도해주세요."); return; }
+                setIsLoggingIn(true);
+                window.google.accounts.id.prompt(n => {
+                    if (n.isNotDisplayed() || n.isSkippedMoment()) {
+                        setIsLoggingIn(false);
+                        const client = window.google.accounts.oauth2.initTokenClient({
+                            client_id: GOOGLE_CLIENT_ID, scope: "email profile",
+                            callback: async tr => {
+                                if (tr.error) { setIsLoggingIn(false); return; }
+                                try { const cred = firebase.auth.GoogleAuthProvider.credential(null, tr.access_token); await auth.signInWithCredential(cred); }
+                                catch(e) { setIsLoggingIn(false); }
+                            }
+                        });
+                        client.requestAccessToken();
+                    }
+                });
+            };
+
+            // 책 추가
+            const handleBookAdded = async (bookData) => {
+                const chapters = (bookData.chapters || []).map((ch, i) => ({
+                    id: Date.now() + i,
+                    title: ch.title,
+                    startPage: ch.startPage || "",
+                    endPage: ch.endPage || "",
+                    record: null
+                })).filter(ch => ch.title);
+
+                const newBook = {
+                    isbn: bookData.isbn || "",
+                    title: bookData.title,
+                    author: bookData.author,
+                    publisher: bookData.publisher || "",
+                    cover: bookData.cover || "",
+                    totalPages: bookData.totalPages || 0,
+                    status: "reading",
+                    chapters,
+                    readingSessions: [],
+                    review: null,
+                    createdAt: Date.now()
+                };
+
+                if (user) {
+                    await db.collection("users").doc(user.uid).collection("books").add(newBook);
+                } else {
+                    setBooks(p => [{ id: Date.now().toString(), ...newBook }, ...p]);
+                }
+                showToast("📚 서재에 추가되었습니다!");
+                setActiveTab("library");
+            };
+
+            // 책 삭제
+            const handleDeleteBook = async (bookId) => {
+                setBooks(p => p.filter(b => b.id !== bookId));
+                if (selectedBook && selectedBook.id === bookId) setSelectedBook(null);
+                if (user) {
+                    await db.collection("users").doc(user.uid).collection("books").doc(bookId).delete();
+                }
+                showToast("책이 삭제되었습니다.");
+            };
+
+            // 책 업데이트
+            const handleUpdateBook = async (updatedBook) => {
+                setBooks(p => p.map(b => b.id === updatedBook.id ? updatedBook : b));
+                if (selectedBook && selectedBook.id === updatedBook.id) setSelectedBook(updatedBook);
+                if (user) {
+                    const { id, ...data } = updatedBook;
+                    await db.collection("users").doc(user.uid).collection("books").doc(id).set(data);
+                }
+            };
+
+            const renderContent = () => {
+                if (selectedBook) {
+                    return <BookDetail book={selectedBook} onBack={() => setSelectedBook(null)}
+                        onUpdateBook={handleUpdateBook} onDeleteBook={handleDeleteBook} showToast={showToast} />;
+                }
+                switch(activeTab) {
+                    case "library": return <LibraryScreen books={books} onSelectBook={setSelectedBook} onDeleteBook={handleDeleteBook} />;
+                    case "add": return <AddBookScreen onBookAdded={handleBookAdded} showToast={showToast} />;
+                    case "stats": return <StatsScreen books={books} />;
+                    case "settings": return <SettingsScreen user={user} signInWithGoogle={signInWithGoogle} isLoggingIn={isLoggingIn} />;
+                    default: return null;
+                }
+            };
+
+            return (
+                <div class="flex flex-col h-full" style={{fontFamily:"'Noto Sans KR', sans-serif"}}>
+                    {/* 모바일 헤더 */}
+                    <header class="bg-gradient-to-r from-teal-600 to-cyan-500 text-white p-4 shadow-md flex justify-between items-center z-20 md:hidden flex-shrink-0">
+                        <h1 class="text-xl font-black">책읽는 하루 📚</h1>
+                        <div class="flex items-center gap-2">
+                            {user
+                                ? <span class="text-[10px] bg-white/20 px-2 py-1 rounded-full">● 동기화 됨</span>
+                                : <span class="text-[10px] bg-white/20 px-2 py-1 rounded-full">● 비로그인</span>}
+                            <button onClick={() => { setSelectedBook(null); setActiveTab("settings"); }} class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full">⚙️</button>
+                        </div>
+                    </header>
+
+                    {/* 토스트 */}
+                    {toastMessage && (
+                        <div class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-lg z-50 text-sm whitespace-nowrap toast-animation font-bold">
+                            {toastMessage}
+                        </div>
+                    )}
+
+                    <div class="flex flex-1 overflow-hidden">
+                        {/* 데스크탑 사이드바 */}
+                        <nav class="sidebar-nav flex-shrink-0">
+                            <div class="p-5 border-b border-white/20">
+                                <h1 class="text-lg font-black text-white tracking-tight">책읽는 하루 📚</h1>
+                                {user
+                                    ? <p class="text-xs text-white/70 mt-1">● {user.displayName} 님</p>
+                                    : <p class="text-xs text-white/60 mt-1">● 로그인 필요</p>}
+                            </div>
+                            <div class="flex-1 py-2 overflow-y-auto">
+                                {NAV_ITEMS.map(item => (
+                                    <div key={item.id} onClick={() => { setSelectedBook(null); setActiveTab(item.id); }}
+                                        class={`sidebar-item ${activeTab===item.id && !selectedBook ? "active" : ""}`}>
+                                        <span class="icon">{item.icon}</span>
+                                        <span>{item.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            {user && (
+                                <div class="p-4 border-t border-white/20">
+                                    <button onClick={() => auth.signOut()} class="w-full text-xs text-white/60 hover:text-white py-1 text-center transition-colors">로그아웃</button>
+                                </div>
+                            )}
+                        </nav>
+
+                        {/* 메인 콘텐츠 */}
+                        <div class="flex-1 overflow-y-auto pb-24 md:pb-8 bg-gray-50">
+                            {renderContent()}
+                        </div>
+                    </div>
+
+                    {/* 모바일 하단 네비게이션 */}
+                    <nav class="bottom-nav bg-white border-t border-gray-200 justify-around p-1 flex-shrink-0 w-full z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden">
+                        {NAV_ITEMS.map(item => (
+                            <button key={item.id} onClick={() => { setSelectedBook(null); setActiveTab(item.id); }}
+                                class={`flex flex-col items-center flex-1 py-1.5 transition-colors ${activeTab===item.id && !selectedBook ? "text-teal-600" : "text-gray-400"}`}>
+                                <span class="text-lg mb-0.5">{item.icon}</span>
+                                <span class="text-[9px] font-bold">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+</body>
+</html>
