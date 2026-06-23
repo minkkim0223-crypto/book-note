@@ -30,7 +30,7 @@
         body { font-size: 20px; }
 
         /* 사이드바 */
-        .sidebar-nav { display: none; flex-direction: column; width: 220px; min-height: 100vh; background: linear-gradient(180deg, #0d9488 0%, #0891b2 100%); }
+        .sidebar-nav { display: none; flex-direction: column; width: 220px; min-height: 100vh; background: linear-gradient(180deg, #7c6fa0 0%, #5b8fa8 100%); }
         .bottom-nav { display: flex; }
         @media (min-width: 768px) {
             .sidebar-nav { display: flex; }
@@ -39,10 +39,10 @@
         }
         @media (min-width: 1024px) { .sidebar-nav { width: 240px; } }
 
-        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 13px 20px; color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 14px; font-weight: 600; }
-        .sidebar-item:hover { background: rgba(255,255,255,0.12); color: white; }
-        .sidebar-item.active { background: rgba(255,255,255,0.2); color: white; border-left-color: white; }
-        .sidebar-item .icon { font-size: 18px; width: 26px; text-align: center; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 16px 20px; color: rgba(255,255,255,0.85); cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 22px; font-weight: 600; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.15); color: white; }
+        .sidebar-item.active { background: rgba(255,255,255,0.25); color: white; border-left-color: white; }
+        .sidebar-item .icon { font-size: 22px; width: 30px; text-align: center; }
 
         /* 토스트 */
         @keyframes fadeInUp { 0% { opacity:0; transform:translateY(20px); } 100% { opacity:1; transform:translateY(0); } }
@@ -1523,7 +1523,7 @@
             return (
                 <div class="flex flex-col h-full" style={{fontFamily:"'Gamja Flower', 'Noto Sans KR', sans-serif"}}>
                     {/* 모바일 헤더 */}
-                    <header class="bg-gradient-to-r from-teal-600 to-cyan-500 text-white p-4 shadow-md flex justify-between items-center z-20 md:hidden flex-shrink-0">
+                    <header class="bg-gradient-to-r from-[#7c6fa0] to-[#5b8fa8] text-white p-4 shadow-md flex justify-between items-center z-20 md:hidden flex-shrink-0">
                         <h1 class="text-xl font-black">책읽는 하루 📚</h1>
                         <div class="flex items-center gap-2">
                             {user
