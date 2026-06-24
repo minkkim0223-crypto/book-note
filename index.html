@@ -468,39 +468,35 @@
 
         // ─── 목차 편집 컴포넌트 ───────────────────────────────────
         function ChapterEditor({ book, onUpdateBook, showToast }) {
-            // 저장된 목차를 로컬 편집 상태로 관리
-            // key prop으로 컴포넌트 리셋을 외부에서 제어
-            const [editChapters, setEditChapters] = useState(() =>
-                (book.chapters || []).map((ch, i) => ({
-                    ...ch,
-                    _eid: ch.id ? String(ch.id) : String(Date.now() + i + Math.random())
-                }))
-            );
+            const makeEid = () => String(Date.now() + Math.random());
+            const toEditItems = (chs) => (chs || []).map((ch, i) => ({
+                ...ch,
+                id: ch.id || (Date.now() + i),
+                _eid: ch._eid || makeEid()
+            }));
+
+            const [editChapters, setEditChapters] = useState(() => toEditItems(book.chapters));
             const [bulkText, setBulkText] = useState("");
             const [inputMode, setInputMode] = useState("individual");
-            const [saved, setSaved] = useState(false);
+            const [saved, setSaved] = useState(true);
+
+            // 마지막 저장된 목차를 ref로 추적
+            const lastSavedRef = useRef(toEditItems(book.chapters));
 
             const isPart = (line) => /^[0-9]+부(\s|$)/.test(line.trim());
 
             const addItem = (type) => {
                 setSaved(false);
-                setEditChapters(p => [...p, {
-                    type, title: "",
-                    id: Date.now() + Math.random(),
-                    _eid: String(Date.now() + Math.random())
-                }]);
+                setEditChapters(p => [...p, { type, title: "", id: Date.now() + Math.random(), _eid: makeEid() }]);
             };
-
             const updateItem = (eid, val) => {
                 setSaved(false);
                 setEditChapters(p => p.map(c => c._eid === eid ? {...c, title: val} : c));
             };
-
             const removeItem = (eid) => {
                 setSaved(false);
                 setEditChapters(p => p.filter(c => c._eid !== eid));
             };
-
             const moveItem = (eid, dir) => {
                 setSaved(false);
                 setEditChapters(p => {
@@ -516,11 +512,11 @@
             const applyBulk = () => {
                 const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
                 if (!lines.length) return;
-                const parsed = lines.map((line) => ({
+                const parsed = lines.map(line => ({
                     type: isPart(line) ? "part" : "chapter",
                     title: line,
                     id: Date.now() + Math.random(),
-                    _eid: String(Date.now() + Math.random()),
+                    _eid: makeEid(),
                     record: null
                 }));
                 setEditChapters(parsed);
@@ -529,19 +525,20 @@
             };
 
             const resetToSaved = () => {
-                setEditChapters((book.chapters || []).map((ch, i) => ({
-                    ...ch,
-                    _eid: ch.id ? String(ch.id) : String(Date.now() + i + Math.random())
-                })));
+                // 마지막 저장값으로 복원
+                setEditChapters(lastSavedRef.current.map(ch => ({...ch, _eid: ch._eid || makeEid()})));
                 setBulkText("");
-                setSaved(false);
+                setSaved(true);
             };
 
             const handleSave = () => {
+                // _eid 제거하고 저장
                 const toSave = editChapters.map(ch => {
                     const {_eid, ...rest} = ch;
-                    return {...rest, id: rest.id || Date.now() + Math.random()};
+                    return rest;
                 });
+                // 저장값을 ref에 기록 (editChapters 상태는 그대로 유지)
+                lastSavedRef.current = editChapters.map(ch => ({...ch}));
                 onUpdateBook({...book, chapters: toSave});
                 setSaved(true);
                 showToast("목차가 저장되었습니다! ✨");
@@ -552,15 +549,14 @@
 
             return (
                 <div>
-                    {/* 요약 + 초기화 버튼 */}
                     <div class="flex justify-between items-center mb-3">
                         <p class="text-sm font-black text-gray-700">
                             {partCount > 0 && <span class="mr-2 text-[#7c6fa0]">📂 {partCount}부</span>}
                             <span class="text-gray-500">📄 {chCount}챕터</span>
-                            {!saved && editChapters.length > 0 && <span class="ml-2 text-xs text-orange-400 font-bold">● 미저장</span>}
+                            {!saved && <span class="ml-2 text-xs text-orange-400 font-bold">● 미저장</span>}
                         </p>
                         <div class="flex items-center gap-2">
-                            <button onClick={resetToSaved} class="text-xs text-gray-400 hover:text-gray-600 underline">초기화</button>
+                            <button onClick={resetToSaved} class="text-xs text-gray-400 hover:text-gray-600 underline px-1">↩ 초기화</button>
                             <div class="view-toggle" style={{padding:"2px"}}>
                                 <button class={inputMode==="bulk"?"active":""} onClick={() => setInputMode("bulk")}
                                     style={{padding:"4px 10px", fontSize:"11px"}}>일괄 입력</button>
@@ -573,7 +569,7 @@
                     {inputMode === "bulk" ? (
                         <div class="mb-3">
                             <div class="bg-[#f0faf7] rounded-lg p-3 mb-2 text-xs text-[#7c6fa0] border border-[#ccefe8]">
-                                💡 "1부", "2부" 처럼 숫자+부로 시작하면 부(Part)로, 나머지는 챕터로 자동 구분됩니다
+                                💡 "1부", "2부" 처럼 숫자+부로 시작하면 부(Part)로, 나머지는 챕터로 구분됩니다
                             </div>
                             <textarea rows="8"
                                 placeholder={"1부 습관의 기초\n1장 작은 변화의 힘\n2장 정체성 기반 습관\n2부 습관 만들기\n1장 실행 의도\n2장 환경 설계"}
@@ -590,11 +586,11 @@
                         <div class="mb-3">
                             {editChapters.length === 0 ? (
                                 <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
-                                    목차가 없어요. 아래에서 부/챕터를 추가해보세요!
+                                    목차가 없어요. 아래 버튼으로 부/챕터를 추가해보세요!
                                 </div>
                             ) : (
                                 <div class="space-y-1.5 max-h-72 overflow-y-auto">
-                                    {editChapters.map((ch, i) => (
+                                    {editChapters.map((ch) => (
                                         <div key={ch._eid} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-[#f0faf7] border border-[#b0dfd4]" : "bg-gray-50 border border-gray-100 ml-4")}>
                                             <span class="text-xs flex-shrink-0">{ch.type==="part" ? "📂" : "📄"}</span>
                                             <input type="text"
@@ -603,9 +599,9 @@
                                                 style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
                                                 value={ch.title}
                                                 onChange={e => updateItem(ch._eid, e.target.value)} />
-                                            <button onClick={() => moveItem(ch._eid, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1" title="위로">▲</button>
-                                            <button onClick={() => moveItem(ch._eid, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1" title="아래로">▼</button>
-                                            <button onClick={() => removeItem(ch._eid)} class="text-red-300 hover:text-red-500 text-xs px-1 font-bold" title="삭제">×</button>
+                                            <button onClick={() => moveItem(ch._eid, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
+                                            <button onClick={() => moveItem(ch._eid, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
+                                            <button onClick={() => removeItem(ch._eid)} class="text-red-300 hover:text-red-500 text-xs px-2 font-black text-sm">×</button>
                                         </div>
                                     ))}
                                 </div>
@@ -756,7 +752,7 @@
                     )}
 
                     <div style={{display: view==="edit" ? "block" : "none"}}>
-                        <ChapterEditor key={JSON.stringify((book.chapters||[]).map(c=>c.id))} book={book} onUpdateBook={onUpdateBook} showToast={showToast} />
+                        <ChapterEditor book={book} onUpdateBook={onUpdateBook} showToast={showToast} />
                     </div>
 
                     {view === "review" && (
