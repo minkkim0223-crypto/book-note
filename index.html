@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="책읽는 하루">
-    <meta name="theme-color" content="#0d9488">
+    <meta name="theme-color" content="#7c6fa0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -61,7 +61,7 @@
 
         /* 진행률 바 */
         .progress-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #0d9488, #0891b2); border-radius: 999px; transition: width 0.5s ease; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #7c6fa0, #5b8fa8); border-radius: 999px; transition: width 0.5s ease; }
 
         /* 별점 */
         .star { font-size: 24px; cursor: pointer; transition: transform 0.1s; }
@@ -72,11 +72,11 @@
 
         /* 캘린더 */
         .cal-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; cursor: pointer; transition: all 0.15s; font-weight: 500; position: relative; }
-        .cal-day:hover { background: #ccfbf1; }
-        .cal-day.today { background: #0891b2; color: white; font-weight: 700; }
-        .cal-day.has-read { background: #ccfbf1; color: #0d9488; font-weight: 700; }
-        .cal-day.today.has-read { background: #0d9488; color: white; }
-        .cal-day.has-finished img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #0d9488; }
+        .cal-day:hover { background: #e8f5f0; }
+        .cal-day.today { background: #5b8fa8; color: white; font-weight: 700; }
+        .cal-day.has-read { background: #e8f5f0; color: #7c6fa0; font-weight: 700; }
+        .cal-day.today.has-read { background: #7c6fa0; color: white; }
+        .cal-day.has-finished img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid #7c6fa0; }
 
         /* 귀여운 빈상태 */
         .empty-state { text-align: center; padding: 60px 20px; }
@@ -84,12 +84,12 @@
         @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         /* 책 표지 플레이스홀더 */
-        .book-cover-placeholder { background: linear-gradient(135deg, #ccfbf1 0%, #a5f3fc 100%); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+        .book-cover-placeholder { background: linear-gradient(135deg, #e8f5f0 0%, #a5f3fc 100%); display: flex; align-items: center; justify-content: center; font-size: 32px; }
 
         /* 탭 토글 */
         .view-toggle { display: flex; background: #f1f5f9; border-radius: 999px; padding: 3px; }
         .view-toggle button { flex: 1; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; transition: all 0.2s; }
-        .view-toggle button.active { background: white; color: #0d9488; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .view-toggle button.active { background: white; color: #7c6fa0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .view-toggle button:not(.active) { color: #94a3b8; }
 
         /* 스크롤바 */
@@ -202,18 +202,18 @@
                         ) : (
                             <div class="mb-4 relative">
                                 <video ref={videoRef} id="scanner-video" autoPlay muted playsInline></video>
-                                <div class="absolute inset-0 border-2 border-teal-400 rounded-xl pointer-events-none opacity-50"></div>
+                                <div class="absolute inset-0 border-2 border-[#86c5b0] rounded-xl pointer-events-none opacity-50"></div>
                                 <p class="text-xs text-center text-gray-400 mt-2">책 뒷면 바코드에 카메라를 가져다 대세요</p>
                             </div>
                         )}
                         <div class="border-t pt-4">
                             <p class="text-xs font-bold text-gray-500 mb-2">직접 ISBN 입력</p>
                             <div class="flex gap-2">
-                                <input type="text" placeholder="ISBN 13자리 입력" class="flex-1 p-2 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                <input type="text" placeholder="ISBN 13자리 입력" class="flex-1 p-2 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0]"
                                     value={manualIsbn} onChange={e => setManualIsbn(e.target.value)}
                                     onKeyPress={e => { if(e.key==="Enter" && manualIsbn.trim()) onDetected(manualIsbn.trim()); }} />
                                 <button onClick={() => manualIsbn.trim() && onDetected(manualIsbn.trim())}
-                                    class="px-4 bg-teal-600 text-white rounded-lg font-bold text-sm">검색</button>
+                                    class="px-4 bg-[#7c6fa0] text-white rounded-lg font-bold text-sm">검색</button>
                             </div>
                         </div>
                     </div>
@@ -269,7 +269,7 @@
                         </div>
 
                         {/* 책 정보 */}
-                        <div class="flex gap-3 mb-5 p-3 bg-teal-50 rounded-xl border border-teal-100">
+                        <div class="flex gap-3 mb-5 p-3 bg-[#f0faf7] rounded-xl border border-[#ccefe8]">
                             <div class="w-16 flex-shrink-0">
                                 <BookCover cover={bookData.cover} title={bookData.title} size="md" />
                             </div>
@@ -277,13 +277,13 @@
                                 <p class="font-black text-gray-800 text-sm leading-tight mb-1">{bookData.title}</p>
                                 <p class="text-xs text-gray-500 mb-0.5">{bookData.author}</p>
                                 <p class="text-xs text-gray-400">{bookData.publisher}</p>
-                                {bookData.totalPages > 0 && <p class="text-xs text-teal-600 font-bold mt-1">총 {bookData.totalPages}p</p>}
+                                {bookData.totalPages > 0 && <p class="text-xs text-[#7c6fa0] font-bold mt-1">총 {bookData.totalPages}p</p>}
                             </div>
                         </div>
 
                         <div class="flex gap-2 mb-4">
                             {[
-                                { v:"reading", label:"📖 읽는 중", cls:"border-teal-400 bg-teal-50 text-teal-700" },
+                                { v:"reading", label:"📖 읽는 중", cls:"border-[#86c5b0] bg-[#f0faf7] text-[#7c6fa0]" },
                                 { v:"wishlist", label:"🔖 읽고 싶은", cls:"border-yellow-400 bg-yellow-50 text-yellow-700" },
                                 { v:"paused", label:"⏸ 중단", cls:"border-gray-300 bg-gray-50 text-gray-500" },
                             ].map(function(s) {
@@ -308,15 +308,15 @@
 
                             {inputMode === "bulk" ? (
                                 <div>
-                                    <div class="bg-teal-50 rounded-lg p-3 mb-2 text-xs text-teal-700 font-bold border border-teal-100">
+                                    <div class="bg-[#f0faf7] rounded-lg p-3 mb-2 text-xs text-[#7c6fa0] font-bold border border-[#ccefe8]">
                                         💡 <span class="font-normal">"1부"로 시작하면 자동으로 부(Part)로, 나머지는 챕터로 구분됩니다</span>
                                     </div>
                                     <textarea rows="7" placeholder={"1부 습관의 기초\n1장 작은 변화의 힘\n2장 정체성 기반 습관\n2부 습관 만들기\n3장 실행 의도\n4장 환경 설계\n..."}
-                                        class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                        class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0] resize-none"
                                         value={bulkText} onChange={e => setBulkText(e.target.value)}></textarea>
                                     {bulkText.trim() && (
                                         <button onClick={applyBulk}
-                                            class="mt-2 w-full py-2 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold border border-teal-200 hover:bg-teal-100">
+                                            class="mt-2 w-full py-2 rounded-lg bg-[#f0faf7] text-[#7c6fa0] text-xs font-bold border border-[#b0dfd4] hover:bg-[#d4ede7]">
                                             ✨ {bulkText.split("\n").filter(l=>l.trim()).length}개 항목 적용하고 확인하기
                                         </button>
                                     )}
@@ -331,13 +331,13 @@
                                     )}
                                     <div class="space-y-1.5 max-h-52 overflow-y-auto mb-2">
                                         {chapters.map((ch, i) => (
-                                            <div key={i} class={`flex gap-2 items-center p-2 rounded-lg ${ch.type==="part" ? "bg-teal-50 border border-teal-100" : "bg-gray-50 border border-gray-100 ml-3"}`}>
-                                                <span class="text-xs flex-shrink-0 font-black" style={{color: ch.type==="part" ? "#0d9488" : "#94a3b8"}}>
+                                            <div key={i} class={`flex gap-2 items-center p-2 rounded-lg ${ch.type==="part" ? "bg-[#f0faf7] border border-[#ccefe8]" : "bg-gray-50 border border-gray-100 ml-3"}`}>
+                                                <span class="text-xs flex-shrink-0 font-black" style={{color: ch.type==="part" ? "#7c6fa0" : "#94a3b8"}}>
                                                     {ch.type === "part" ? "📂" : "📄"}
                                                 </span>
                                                 <input type="text" placeholder={ch.type==="part" ? "1부 제목" : "챕터 제목"}
                                                     class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
-                                                    style={{color: ch.type==="part" ? "#0d9488" : "#374151"}}
+                                                    style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
                                                     value={ch.title} onChange={e => updateItem(i, e.target.value)} />
                                                 <button onClick={() => removeItem(i)} class="text-red-300 text-xs hover:text-red-500 flex-shrink-0">×</button>
                                             </div>
@@ -345,7 +345,7 @@
                                     </div>
                                     <div class="flex gap-2">
                                         <button onClick={() => addItem("part")}
-                                            class="flex-1 py-2 rounded-lg border border-dashed border-teal-300 text-teal-600 text-xs font-bold hover:bg-teal-50">
+                                            class="flex-1 py-2 rounded-lg border border-dashed border-[#86c5b0] text-[#7c6fa0] text-xs font-bold hover:bg-[#f0faf7]">
                                             + 부 추가
                                         </button>
                                         <button onClick={() => addItem("chapter")}
@@ -359,7 +359,7 @@
 
                         <div class="flex gap-2">
                             <button onClick={onCancel} class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm">취소</button>
-                            <button onClick={handleConfirm} class="flex-1 py-3 rounded-xl bg-teal-600 text-white font-bold text-sm">서재에 추가 📚</button>
+                            <button onClick={handleConfirm} class="flex-1 py-3 rounded-xl bg-[#7c6fa0] text-white font-bold text-sm">서재에 추가 📚</button>
                         </div>
                     </div>
                 </div>
@@ -376,27 +376,27 @@
             return (
                 <div class="p-5 md:p-8 max-w-2xl mx-auto w-full">
                     <button onClick={onBack} class="mb-4 text-sm text-gray-500 font-bold flex items-center gap-1">◀ 뒤로</button>
-                    <div class="flex items-center gap-3 mb-5 p-3 bg-teal-50 rounded-xl border border-teal-100">
+                    <div class="flex items-center gap-3 mb-5 p-3 bg-[#f0faf7] rounded-xl border border-[#ccefe8]">
                         <div class="w-10 h-14 flex-shrink-0">
                             <BookCover cover={book.cover} title={book.title} size="sm" />
                         </div>
                         <div>
-                            <p class="text-xs text-teal-600 font-bold">{book.title}</p>
+                            <p class="text-xs text-[#7c6fa0] font-bold">{book.title}</p>
                             <p class="font-black text-gray-800">{chapter.title}</p>
                         </div>
                     </div>
 
                     <div class="space-y-4">
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                            <label class="block text-xs font-black text-teal-700 mb-2">🔑 핵심 키워드</label>
+                            <label class="block text-xs font-black text-[#7c6fa0] mb-2">🔑 핵심 키워드</label>
                             <input type="text" placeholder="예: 습관, 작은 실행, 복리의 법칙"
-                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0]"
                                 value={keywords} onChange={e => setKeywords(e.target.value)} />
                         </div>
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                            <label class="block text-xs font-black text-teal-700 mb-2">📝 내용 요약</label>
+                            <label class="block text-xs font-black text-[#7c6fa0] mb-2">📝 내용 요약</label>
                             <textarea rows="4" placeholder="이 챕터의 핵심 내용을 내 언어로 요약해보세요."
-                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0] resize-none"
                                 value={summary} onChange={e => setSummary(e.target.value)}></textarea>
                         </div>
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -408,7 +408,7 @@
                     </div>
 
                     <button onClick={() => onSave({ keywords, summary, myThought, readDate: formatDate() })}
-                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-teal-600 hover:bg-teal-700 shadow-md text-base">
+                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-[#7c6fa0] hover:bg-[#6b5f8f] shadow-md text-base">
                         기록 저장하기 ✨
                     </button>
                 </div>
@@ -428,7 +428,7 @@
                     <h2 class="text-2xl font-black text-gray-800 mb-1">완독 리뷰 🏁</h2>
                     <p class="text-sm text-gray-500 mb-5">이 책과의 여정을 마무리해보세요.</p>
 
-                    <div class="flex gap-3 mb-5 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
+                    <div class="flex gap-3 mb-5 p-4 bg-gradient-to-r from-[#f0faf7] to-[#e8f4f8] rounded-xl border border-[#ccefe8]">
                         <div class="w-16 flex-shrink-0">
                             <BookCover cover={book.cover} title={book.title} size="md" />
                         </div>
@@ -441,9 +441,9 @@
 
                     <div class="space-y-4">
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                            <label class="block text-xs font-black text-teal-700 mb-2">📖 최종 요약</label>
+                            <label class="block text-xs font-black text-[#7c6fa0] mb-2">📖 최종 요약</label>
                             <textarea rows="5" placeholder="이 책 전체를 내 언어로 한번 정리해보세요. 핵심 메시지, 중요한 개념들을 담아보세요."
-                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                class="w-full p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0] resize-none"
                                 value={finalSummary} onChange={e => setFinalSummary(e.target.value)}></textarea>
                         </div>
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -456,7 +456,7 @@
 
                     <button onClick={() => onSave({ finalSummary, impression, rating, completedAt: formatDate() })}
                         disabled={!rating}
-                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-gradient-to-r from-teal-600 to-cyan-500 shadow-md text-base disabled:opacity-50">
+                        class="w-full py-4 mt-5 rounded-xl font-black text-white bg-gradient-to-r from-[#7c6fa0] to-[#5b8fa8] shadow-md text-base disabled:opacity-50">
                         완독 완료! 🎉
                     </button>
                     {!rating && <p class="text-center text-xs text-gray-400 mt-2">별점을 선택해주세요</p>}
@@ -502,7 +502,7 @@
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <p class="text-sm font-black text-gray-700">
-                            {partCount > 0 && <span class="mr-2 text-teal-600">📂 {partCount}부</span>}
+                            {partCount > 0 && <span class="mr-2 text-[#7c6fa0]">📂 {partCount}부</span>}
                             <span class="text-gray-500">📄 {chCount}챕터</span>
                         </p>
                         <div class="view-toggle" style={{padding:"2px"}}>
@@ -515,16 +515,16 @@
 
                     {inputMode === "bulk" ? (
                         <div class="mb-3">
-                            <div class="bg-teal-50 rounded-lg p-3 mb-2 text-xs text-teal-700 border border-teal-100">
+                            <div class="bg-[#f0faf7] rounded-lg p-3 mb-2 text-xs text-[#7c6fa0] border border-[#ccefe8]">
                                 💡 "1부"로 시작하면 부(Part)로, 나머지는 챕터로 자동 구분됩니다
                             </div>
                             <textarea rows="8"
                                 placeholder={"1부 습관의 기초\n1장 작은 변화의 힘\n2장 정체성 기반 습관\n2부 습관 만들기\n1장 실행 의도\n2장 환경 설계\n..."}
-                                class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                                class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0] resize-none"
                                 value={bulkText} onChange={function(e) { setBulkText(e.target.value); }}></textarea>
                             {bulkText.trim() && (
                                 <button onClick={applyBulk}
-                                    class="mt-2 w-full py-2 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold border border-teal-200 hover:bg-teal-100">
+                                    class="mt-2 w-full py-2 rounded-lg bg-[#f0faf7] text-[#7c6fa0] text-xs font-bold border border-[#b0dfd4] hover:bg-[#d4ede7]">
                                     ✨ {bulkText.split("\n").filter(function(l) { return l.trim(); }).length}개 항목 적용
                                 </button>
                             )}
@@ -533,11 +533,11 @@
                         <div class="space-y-1.5 max-h-72 overflow-y-auto mb-3">
                             {editChapters.map(function(ch, i) {
                                 return (
-                                    <div key={ch.id || i} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-teal-50 border border-teal-200" : "bg-gray-50 border border-gray-100 ml-4")}>
+                                    <div key={ch.id || i} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-[#f0faf7] border border-[#b0dfd4]" : "bg-gray-50 border border-gray-100 ml-4")}>
                                         <span class="text-xs flex-shrink-0">{ch.type==="part" ? "📂" : "📄"}</span>
                                         <input type="text" placeholder={ch.type==="part" ? "부 제목" : "챕터 제목"}
                                             class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
-                                            style={{color: ch.type==="part" ? "#0d9488" : "#374151"}}
+                                            style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
                                             value={ch.title} onChange={function(e) { updateItem(i, e.target.value); }} />
                                         <button onClick={function() { moveItem(i, -1); }} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
                                         <button onClick={function() { moveItem(i, 1); }} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
@@ -550,12 +550,12 @@
 
                     <div class="flex gap-2 mb-3">
                         <button onClick={function() { addItem("part"); }}
-                            class="flex-1 py-2 rounded-lg border border-dashed border-teal-300 text-teal-600 text-xs font-bold hover:bg-teal-50">+ 부 추가</button>
+                            class="flex-1 py-2 rounded-lg border border-dashed border-[#86c5b0] text-[#7c6fa0] text-xs font-bold hover:bg-[#f0faf7]">+ 부 추가</button>
                         <button onClick={function() { addItem("chapter"); }}
                             class="flex-1 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 text-xs font-bold hover:bg-gray-50">+ 챕터 추가</button>
                     </div>
                     <button onClick={handleSave}
-                        class="w-full py-3 rounded-xl bg-teal-600 text-white font-black text-sm hover:bg-teal-700">
+                        class="w-full py-3 rounded-xl bg-[#7c6fa0] text-white font-black text-sm hover:bg-[#6b5f8f]">
                         목차 저장하기 ✨
                     </button>
                 </div>
@@ -618,13 +618,13 @@
                             <BookCover cover={book.cover} title={book.title} size="full" />
                         </div>
                         <div class="flex-1">
-                            <p class="text-xs text-teal-600 font-bold mb-1">{book.author}</p>
+                            <p class="text-xs text-[#7c6fa0] font-bold mb-1">{book.author}</p>
                             <h2 class="font-black text-gray-800 text-lg leading-tight mb-2">{book.title}</h2>
                             <p class="text-xs text-gray-400 mb-3">{book.publisher}</p>
                             {book.status === "done" ? (
                                 <span class="inline-flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full">✅ 완독</span>
                             ) : (
-                                <span class="inline-flex items-center gap-1 text-xs font-bold bg-teal-100 text-teal-700 px-3 py-1 rounded-full">📖 읽는 중</span>
+                                <span class="inline-flex items-center gap-1 text-xs font-bold bg-[#d4ede7] text-[#7c6fa0] px-3 py-1 rounded-full">📖 읽는 중</span>
                             )}
                         </div>
                     </div>
@@ -634,7 +634,7 @@
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
                             <div class="flex justify-between text-sm mb-2 font-bold text-gray-700">
                                 <span>읽기 진행률</span>
-                                <span class="text-teal-600">{doneCount}/{chapterOnly.length} 챕터 ({progress}%)</span>
+                                <span class="text-[#7c6fa0]">{doneCount}/{chapterOnly.length} 챕터 ({progress}%)</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill" style={{width:`${progress}%`}}></div>
@@ -660,7 +660,7 @@
                             ) : chapters.map((ch, i) => {
                                 if (ch.type === "part") {
                                     return (
-                                        <div key={ch.id || i} class="bg-teal-600 px-4 py-2.5 rounded-xl mt-3 first:mt-0">
+                                        <div key={ch.id || i} class="bg-[#7c6fa0] px-4 py-2.5 rounded-xl mt-3 first:mt-0">
                                             <p class="font-black text-white text-sm">📂 {ch.title}</p>
                                         </div>
                                     );
@@ -668,14 +668,14 @@
                                 const isDone = ch.record && ch.record.readDate;
                                 return (
                                     <div key={ch.id || i} onClick={() => setSelectedChapter(ch)}
-                                        class={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ml-2 ${isDone ? "bg-teal-50 border-teal-200" : "bg-white border-gray-200 hover:border-teal-300"}`}>
-                                        <div class={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${isDone ? "bg-teal-500 text-white" : "bg-gray-100 text-gray-400"}`}>
+                                        class={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ml-2 ${isDone ? "bg-[#f0faf7] border-[#b0dfd4]" : "bg-white border-gray-200 hover:border-[#86c5b0]"}`}>
+                                        <div class={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${isDone ? "bg-[#f0faf7]0 text-white" : "bg-gray-100 text-gray-400"}`}>
                                             {isDone ? "✓" : "📄"}
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class={`font-bold text-sm ${isDone ? "text-teal-800" : "text-gray-800"}`}>{ch.title}</p>
+                                            <p class={`font-bold text-sm ${isDone ? "text-[#5a4f7a]" : "text-gray-800"}`}>{ch.title}</p>
                                             {isDone && ch.record.keywords && (
-                                                <p class="text-xs text-teal-600 mt-0.5 truncate">🔑 {ch.record.keywords}</p>
+                                                <p class="text-xs text-[#7c6fa0] mt-0.5 truncate">🔑 {ch.record.keywords}</p>
                                             )}
                                         </div>
                                         <span class="text-gray-300 text-sm">▶</span>
@@ -684,7 +684,7 @@
                             })}
                             {chapters.filter(c => c.type !== "part").length > 0 && progress === 100 && book.status !== "done" && (
                                 <button onClick={() => setShowFinishReview(true)}
-                                    class="w-full py-4 mt-2 rounded-xl font-black text-white bg-gradient-to-r from-teal-600 to-cyan-500 shadow-md text-base">
+                                    class="w-full py-4 mt-2 rounded-xl font-black text-white bg-gradient-to-r from-[#7c6fa0] to-[#5b8fa8] shadow-md text-base">
                                     🏁 모든 챕터 완료! 완독 리뷰 작성하기
                                 </button>
                             )}
@@ -704,8 +704,8 @@
                                         <span class="text-sm font-bold text-gray-600">{book.review.rating}/5</span>
                                     </div>
                                     {book.review.finalSummary && (
-                                        <div class="bg-teal-50 p-4 rounded-xl border border-teal-100">
-                                            <p class="text-xs font-black text-teal-700 mb-2">📖 최종 요약</p>
+                                        <div class="bg-[#f0faf7] p-4 rounded-xl border border-[#ccefe8]">
+                                            <p class="text-xs font-black text-[#7c6fa0] mb-2">📖 최종 요약</p>
                                             <p class="text-sm text-gray-700 whitespace-pre-wrap">{book.review.finalSummary}</p>
                                         </div>
                                     )}
@@ -715,7 +715,7 @@
                                             <p class="text-sm text-gray-700 whitespace-pre-wrap">{book.review.impression}</p>
                                         </div>
                                     )}
-                                    <button onClick={() => setShowFinishReview(true)} class="w-full py-3 rounded-xl border border-teal-300 text-teal-600 font-bold text-sm">수정하기</button>
+                                    <button onClick={() => setShowFinishReview(true)} class="w-full py-3 rounded-xl border border-[#86c5b0] text-[#7c6fa0] font-bold text-sm">수정하기</button>
                                 </div>
                             ) : (
                                 <div class="empty-state">
@@ -723,7 +723,7 @@
                                     <p class="text-gray-500 font-bold">아직 완독 리뷰가 없어요</p>
                                     <p class="text-gray-400 text-sm mt-1 mb-4">모든 챕터를 읽고 나서 리뷰를 작성해보세요</p>
                                     <button onClick={() => setShowFinishReview(true)}
-                                        class="px-6 py-3 rounded-xl bg-teal-600 text-white font-bold text-sm">지금 리뷰 작성하기</button>
+                                        class="px-6 py-3 rounded-xl bg-[#7c6fa0] text-white font-bold text-sm">지금 리뷰 작성하기</button>
                                 </div>
                             )}
                         </div>
@@ -736,25 +736,25 @@
         function BookCharacter({ size, mood }) {
             size = size || 120; mood = mood || "happy";
             var mouth = mood === "happy"
-                ? React.createElement("path", {d:"M52 58 Q60 65 68 58", stroke:"#0d9488", strokeWidth:"2.5", fill:"none", strokeLinecap:"round"})
+                ? React.createElement("path", {d:"M52 58 Q60 65 68 58", stroke:"#7c6fa0", strokeWidth:"2.5", fill:"none", strokeLinecap:"round"})
                 : React.createElement("path", {d:"M52 62 Q60 58 68 62", stroke:"#94a3b8", strokeWidth:"2.5", fill:"none", strokeLinecap:"round"});
             return (
                 <svg width={size} height={size} viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="15" y="20" width="90" height="110" rx="8" fill="#ccfbf1" stroke="#0d9488" strokeWidth="3"/>
-                    <rect x="15" y="20" width="18" height="110" rx="4" fill="#0d9488"/>
-                    <line x1="42" y1="38" x2="92" y2="38" stroke="#a7f3d0" strokeWidth="2.5" strokeLinecap="round"/>
-                    <line x1="42" y1="48" x2="92" y2="48" stroke="#a7f3d0" strokeWidth="2.5" strokeLinecap="round"/>
-                    <circle cx="52" cy="45" r="5" fill="white" stroke="#0d9488" strokeWidth="1.5"/>
-                    <circle cx="68" cy="45" r="5" fill="white" stroke="#0d9488" strokeWidth="1.5"/>
-                    <circle cx="53.5" cy="46" r="2.5" fill="#0d9488"/>
-                    <circle cx="69.5" cy="46" r="2.5" fill="#0d9488"/>
+                    <rect x="15" y="20" width="90" height="110" rx="8" fill="#e8f5f0" stroke="#7c6fa0" strokeWidth="3"/>
+                    <rect x="15" y="20" width="18" height="110" rx="4" fill="#7c6fa0"/>
+                    <line x1="42" y1="38" x2="92" y2="38" stroke="#b8e0d4" strokeWidth="2.5" strokeLinecap="round"/>
+                    <line x1="42" y1="48" x2="92" y2="48" stroke="#b8e0d4" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="52" cy="45" r="5" fill="white" stroke="#7c6fa0" strokeWidth="1.5"/>
+                    <circle cx="68" cy="45" r="5" fill="white" stroke="#7c6fa0" strokeWidth="1.5"/>
+                    <circle cx="53.5" cy="46" r="2.5" fill="#7c6fa0"/>
+                    <circle cx="69.5" cy="46" r="2.5" fill="#7c6fa0"/>
                     {mouth}
                     <circle cx="44" cy="55" r="5" fill="#fb7185" opacity="0.3"/>
                     <circle cx="76" cy="55" r="5" fill="#fb7185" opacity="0.3"/>
-                    <ellipse cx="10" cy="75" rx="7" ry="18" fill="#ccfbf1" stroke="#0d9488" strokeWidth="2.5"/>
-                    <ellipse cx="110" cy="75" rx="7" ry="18" fill="#ccfbf1" stroke="#0d9488" strokeWidth="2.5"/>
-                    <rect x="32" y="125" width="18" height="12" rx="6" fill="#0d9488"/>
-                    <rect x="70" y="125" width="18" height="12" rx="6" fill="#0d9488"/>
+                    <ellipse cx="10" cy="75" rx="7" ry="18" fill="#e8f5f0" stroke="#7c6fa0" strokeWidth="2.5"/>
+                    <ellipse cx="110" cy="75" rx="7" ry="18" fill="#e8f5f0" stroke="#7c6fa0" strokeWidth="2.5"/>
+                    <rect x="32" y="125" width="18" height="12" rx="6" fill="#7c6fa0"/>
+                    <rect x="70" y="125" width="18" height="12" rx="6" fill="#7c6fa0"/>
                 </svg>
             );
         }
@@ -780,7 +780,7 @@
 
             const statusBadge = function(status) {
                 var map = {
-                    reading: { label: "읽는 중", cls: "bg-teal-100 text-teal-700" },
+                    reading: { label: "읽는 중", cls: "bg-[#d4ede7] text-[#7c6fa0]" },
                     wishlist: { label: "읽고 싶은", cls: "bg-yellow-100 text-yellow-700" },
                     done: { label: "완독", cls: "bg-green-100 text-green-700" },
                     paused: { label: "중단", cls: "bg-gray-100 text-gray-500" },
@@ -825,7 +825,7 @@
                             var cnt = f.key === "전체" ? books.length : books.filter(f.fn).length;
                             return (
                                 <button key={f.key} onClick={() => setFilter(f.key)}
-                                    class={"px-3 py-1.5 rounded-full text-xs font-bold transition-colors " + (filter===f.key ? "bg-teal-600 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200")}>
+                                    class={"px-3 py-1.5 rounded-full text-xs font-bold transition-colors " + (filter===f.key ? "bg-[#7c6fa0] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200")}>
                                     {f.label} ({cnt})
                                 </button>
                             );
@@ -882,7 +882,7 @@
                                 var doneCount = chapterOnly.filter(function(c) { return c.record && c.record.readDate; }).length;
                                 var progress = chapterOnly.length > 0 ? Math.round((doneCount / chapterOnly.length) * 100) : 0;
                                 return (
-                                    <div key={book.id} class="flex gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:border-teal-200">
+                                    <div key={book.id} class="flex gap-3 p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:border-[#b0dfd4]">
                                         <div class="w-14 h-20 flex-shrink-0 rounded-lg overflow-hidden shadow" onClick={() => onSelectBook(book)}>
                                             <BookCover cover={book.cover} title={book.title} size="full" />
                                         </div>
@@ -896,7 +896,7 @@
                                             {(book.status === "reading" || book.status === "paused") && chapterOnly.length > 0 && (
                                                 <div>
                                                     <div class="flex justify-between text-xs mb-1 text-gray-500 font-bold">
-                                                        <span>진행률</span><span class="text-teal-600">{progress}%</span>
+                                                        <span>진행률</span><span class="text-[#7c6fa0]">{progress}%</span>
                                                     </div>
                                                     <div class="progress-bar"><div class="progress-fill" style={{width:progress+"%"}}></div></div>
                                                 </div>
@@ -1017,7 +1017,7 @@
 
                     {/* 바코드 스캔 버튼 */}
                     <button onClick={() => setShowScanner(true)}
-                        class="w-full py-4 mb-4 rounded-xl bg-teal-600 text-white font-black text-base flex items-center justify-center gap-2 hover:bg-teal-700 transition-colors shadow-md">
+                        class="w-full py-4 mb-4 rounded-xl bg-[#7c6fa0] text-white font-black text-base flex items-center justify-center gap-2 hover:bg-[#6b5f8f] transition-colors shadow-md">
                         <span class="text-xl">📷</span> 바코드 스캔으로 등록
                     </button>
 
@@ -1026,10 +1026,10 @@
                         <p class="text-xs font-black text-gray-500 mb-3">책 제목으로 검색</p>
                         <div class="flex gap-2">
                             <input type="text" placeholder="책 제목을 입력하세요..."
-                                class="flex-1 p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-teal-400"
+                                class="flex-1 p-3 bg-gray-50 rounded-lg text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0]"
                                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                                 onKeyPress={e => e.key==="Enter" && searchByTitle()} />
-                            <button onClick={searchByTitle} class="px-5 bg-teal-600 text-white rounded-lg font-bold text-sm hover:bg-teal-700">검색</button>
+                            <button onClick={searchByTitle} class="px-5 bg-[#7c6fa0] text-white rounded-lg font-bold text-sm hover:bg-[#6b5f8f]">검색</button>
                         </div>
                     </div>
 
@@ -1139,7 +1139,7 @@
                                         class={`cal-day mx-auto ${isToday ? "today" : ""} ${hasRead && !finishedBook ? "has-read" : ""} ${hasRead ? "cursor-pointer" : ""}`}>
                                         {finishedBook ? (
                                             finishedBook.cover
-                                                ? <img src={finishedBook.cover} alt={finishedBook.bookTitle} class="w-full h-full object-cover rounded-full border-2 border-teal-400" />
+                                                ? <img src={finishedBook.cover} alt={finishedBook.bookTitle} class="w-full h-full object-cover rounded-full border-2 border-[#86c5b0]" />
                                                 : <span class="text-lg">📗</span>
                                         ) : (
                                             <span class={`text-xs font-bold ${dow===0 && !isToday ? "text-red-400" : dow===6 && !isToday ? "text-blue-400" : ""}`}>{d}</span>
@@ -1149,7 +1149,7 @@
                             })}
                         </div>
                         <div class="flex items-center gap-4 mt-4 text-xs text-gray-400 font-bold">
-                            <div class="flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-teal-100 border border-teal-300"></div> 독서한 날</div>
+                            <div class="flex items-center gap-1"><div class="w-4 h-4 rounded-full bg-[#d4ede7] border border-[#86c5b0]"></div> 독서한 날</div>
                             <div class="flex items-center gap-1"><span>📗</span> 완독한 날</div>
                         </div>
                     </div>
@@ -1164,12 +1164,12 @@
                                 </div>
                                 <div class="space-y-2">
                                     {selectedDayInfo.sessions.map((s, i) => (
-                                        <div key={i} class="flex items-center gap-2 bg-teal-50 p-3 rounded-xl">
+                                        <div key={i} class="flex items-center gap-2 bg-[#f0faf7] p-3 rounded-xl">
                                             <span class="text-lg">{s.isFinished ? "🎉" : "📖"}</span>
                                             <div>
                                                 <p class="text-sm font-bold text-gray-800">{s.bookTitle}</p>
                                                 {s.chapterTitle && <p class="text-xs text-gray-500">{s.chapterTitle}</p>}
-                                                {s.isFinished && <p class="text-xs text-teal-600 font-bold">완독!</p>}
+                                                {s.isFinished && <p class="text-xs text-[#7c6fa0] font-bold">완독!</p>}
                                             </div>
                                         </div>
                                     ))}
@@ -1278,15 +1278,15 @@
                     <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-4">
                         <h3 class="text-lg font-black text-gray-700 mb-4">계정 연결</h3>
                         {user ? (
-                            <div class="bg-teal-50 p-4 rounded-xl border border-teal-200">
+                            <div class="bg-[#f0faf7] p-4 rounded-xl border border-[#b0dfd4]">
                                 <div class="flex items-center gap-3 mb-3">
-                                    <div class="w-12 h-12 rounded-full bg-teal-200 flex items-center justify-center text-2xl">📚</div>
+                                    <div class="w-12 h-12 rounded-full bg-[#b0dfd4] flex items-center justify-center text-2xl">📚</div>
                                     <div>
                                         <p class="font-black text-gray-800">{user.displayName || "독서가"} 님</p>
                                         <p class="text-xs text-gray-500">{user.email}</p>
                                     </div>
                                 </div>
-                                <p class="text-teal-700 font-bold text-sm mb-4">✅ 실시간 동기화 중입니다.</p>
+                                <p class="text-[#7c6fa0] font-bold text-sm mb-4">✅ 실시간 동기화 중입니다.</p>
                                 <button onClick={() => auth.signOut()} class="w-full py-2 bg-white border border-gray-300 rounded-xl text-gray-600 font-bold hover:bg-gray-50">로그아웃</button>
                             </div>
                         ) : (
@@ -1323,25 +1323,25 @@
                         ) : (
                             <div class="space-y-3">
                                 {/* 전체 내보내기 */}
-                                <div class="p-4 bg-teal-50 rounded-xl border border-teal-100">
+                                <div class="p-4 bg-[#f0faf7] rounded-xl border border-[#ccefe8]">
                                     <div class="flex items-center justify-between mb-2">
                                         <div>
-                                            <p class="font-black text-teal-800 text-sm">📚 전체 내보내기</p>
-                                            <p class="text-xs text-teal-600 mt-0.5">모든 책 {books.length}권을 하나의 파일로</p>
+                                            <p class="font-black text-[#5a4f7a] text-sm">📚 전체 내보내기</p>
+                                            <p class="text-xs text-[#7c6fa0] mt-0.5">모든 책 {books.length}권을 하나의 파일로</p>
                                         </div>
                                         <button onClick={exportAll}
-                                            class="px-4 py-2 bg-teal-600 text-white text-xs font-black rounded-xl hover:bg-teal-700 flex items-center gap-1">
+                                            class="px-4 py-2 bg-[#7c6fa0] text-white text-xs font-black rounded-xl hover:bg-[#6b5f8f] flex items-center gap-1">
                                             ⬇️ 다운로드
                                         </button>
                                     </div>
-                                    <p class="text-[10px] text-teal-500">파일명: 독서기록_전체_{formatDate()}.md</p>
+                                    <p class="text-[10px] text-[#86c5b0]">파일명: 독서기록_전체_{formatDate()}.md</p>
                                 </div>
 
                                 {/* 개별 내보내기 */}
                                 <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
                                     <p class="font-black text-gray-700 text-sm mb-3">📖 책 한 권 내보내기</p>
                                     <select
-                                        class="w-full p-3 bg-white rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400 mb-3 font-bold text-gray-700"
+                                        class="w-full p-3 bg-white rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#86c5b0] mb-3 font-bold text-gray-700"
                                         value={selectedBookId}
                                         onChange={e => setSelectedBookId(e.target.value)}>
                                         <option value="">책을 선택하세요...</option>
@@ -1361,12 +1361,12 @@
                                                     <div class="bg-white p-3 rounded-lg border border-gray-200 mb-3 text-xs text-gray-500">
                                                         <p class="font-bold text-gray-700 mb-1">{book.title}</p>
                                                         <p>챕터 기록: {done}/{chOnly.length}개 완료</p>
-                                                        {book.review && <p class="text-teal-600 font-bold mt-0.5">✅ 완독 리뷰 있음</p>}
+                                                        {book.review && <p class="text-[#7c6fa0] font-bold mt-0.5">✅ 완독 리뷰 있음</p>}
                                                     </div>
                                                 );
                                             })()}
                                             <button onClick={exportSingle}
-                                                class="w-full py-3 bg-teal-600 text-white text-sm font-black rounded-xl hover:bg-teal-700">
+                                                class="w-full py-3 bg-[#7c6fa0] text-white text-sm font-black rounded-xl hover:bg-[#6b5f8f]">
                                                 ⬇️ 이 책 내보내기
                                             </button>
                                         </div>
@@ -1575,7 +1575,7 @@
                     <nav class="bottom-nav bg-white border-t border-gray-200 justify-around p-1 flex-shrink-0 w-full z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:hidden">
                         {NAV_ITEMS.map(item => (
                             <button key={item.id} onClick={() => { setSelectedBook(null); setActiveTab(item.id); }}
-                                class={`flex flex-col items-center flex-1 py-1.5 transition-colors ${activeTab===item.id && !selectedBook ? "text-teal-600" : "text-gray-400"}`}>
+                                class={`flex flex-col items-center flex-1 py-1.5 transition-colors ${activeTab===item.id && !selectedBook ? "text-[#7c6fa0]" : "text-gray-400"}`}>
                                 <span class="text-lg mb-0.5">{item.icon}</span>
                                 <span class="text-[9px] font-bold">{item.label}</span>
                             </button>
