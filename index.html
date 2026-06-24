@@ -474,6 +474,18 @@
             const [bulkText, setBulkText] = useState("");
             const [inputMode, setInputMode] = useState("individual");
 
+            // book.chapters가 외부에서 변경되면 로컬 상태도 동기화
+            // 단, 편집 중인 내용은 유지 (book.id가 바뀔 때만 리셋)
+            const bookIdRef = useRef(book.id);
+            useEffect(() => {
+                if (bookIdRef.current !== book.id) {
+                    bookIdRef.current = book.id;
+                    setEditChapters(
+                        (book.chapters || []).map((ch, i) => ({...ch, id: ch.id || (Date.now() + i)}))
+                    );
+                }
+            }, [book.id]);
+
             const isPart = (line) => /^[0-9]+부(\s|$)/.test(line.trim());
 
             const addItem = (type) => setEditChapters(p => [...p, { type, title: "", id: Date.now() + Math.random() }]);
@@ -498,7 +510,12 @@
             };
 
             const handleSave = () => {
-                onUpdateBook({...book, chapters: editChapters});
+                const toSave = editChapters.map((ch, i) => ({
+                    ...ch,
+                    id: ch.id || (Date.now() + i)
+                }));
+                setEditChapters(toSave);
+                onUpdateBook({...book, chapters: toSave});
                 showToast("목차가 저장되었습니다! ✨");
             };
 
@@ -697,9 +714,9 @@
                         </div>
                     )}
 
-                    {view === "edit" && (
+                    <div style={{display: view==="edit" ? "block" : "none"}}>
                         <ChapterEditor book={book} onUpdateBook={onUpdateBook} showToast={showToast} />
-                    )}
+                    </div>
 
                     {view === "review" && (
                         <div>
