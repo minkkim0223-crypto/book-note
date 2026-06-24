@@ -232,14 +232,15 @@
             const updateItem = (i, val) => setChapters(p => p.map((c,idx) => idx===i ? {...c, title:val} : c));
             const removeItem = (i) => setChapters(p => p.filter((_,idx) => idx!==i));
 
-            // 일괄 입력 파싱
-            // "1부 - " 또는 "1장 " 으로 시작하면 자동 구분, 아니면 챕터로 처리
+            const isPart = (line) => /^[0-9]+부(\s|$)/.test(line.trim());
+
             const applyBulk = () => {
                 const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
-                const parsed = lines.map(line => {
-                    if (/^(\d+부|Part\s*\d+|PART\s*\d+)/i.test(line)) return { type: "part", title: line };
-                    return { type: "chapter", title: line };
-                });
+                const parsed = lines.map((line, i) => ({
+                    type: isPart(line) ? "part" : "chapter",
+                    title: line,
+                    id: Date.now() + i + Math.random()
+                }));
                 if (parsed.length > 0) { setChapters(parsed); setInputMode("individual"); }
             };
 
@@ -247,9 +248,10 @@
                 let items = [];
                 if (inputMode === "bulk") {
                     const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
-                    items = lines.map(line => ({
-                        type: /^(\d+부|Part\s*\d+)/i.test(line) ? "part" : "chapter",
-                        title: line
+                    items = lines.map((line, i) => ({
+                        type: isPart(line) ? "part" : "chapter",
+                        title: line,
+                        id: Date.now() + i + Math.random()
                     }));
                 } else {
                     items = chapters.filter(c => c.title.trim());
@@ -466,37 +468,42 @@
 
         // ─── 목차 편집 컴포넌트 ───────────────────────────────────
         function ChapterEditor({ book, onUpdateBook, showToast }) {
-            const [editChapters, setEditChapters] = useState(book.chapters || []);
+            const [editChapters, setEditChapters] = useState(
+                (book.chapters || []).map((ch, i) => ({...ch, id: ch.id || (Date.now() + i)}))
+            );
             const [bulkText, setBulkText] = useState("");
             const [inputMode, setInputMode] = useState("individual");
 
-            const addItem = function(type) { setEditChapters(function(p) { return p.concat([{ type: type, title: "", id: Date.now() }]); }); };
-            const updateItem = function(i, val) { setEditChapters(function(p) { return p.map(function(c,idx) { return idx===i ? Object.assign({}, c, {title:val}) : c; }); }); };
-            const removeItem = function(i) { setEditChapters(function(p) { return p.filter(function(_,idx) { return idx!==i; }); }); };
-            const moveItem = function(i, dir) {
-                var arr = editChapters.slice();
-                var j = i + dir;
-                if (j < 0 || j >= arr.length) return;
-                var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-                setEditChapters(arr);
-            };
+            const isPart = (line) => /^[0-9]+부(\s|$)/.test(line.trim());
 
-            const applyBulk = function() {
-                var lines = bulkText.split("\n").map(function(l) { return l.trim(); }).filter(Boolean);
-                var parsed = lines.map(function(line) {
-                    return { type: /^(\d+부|Part\s*\d+)/i.test(line) ? "part" : "chapter", title: line, id: Date.now() + Math.random() };
-                });
+            const addItem = (type) => setEditChapters(p => [...p, { type, title: "", id: Date.now() + Math.random() }]);
+            const updateItem = (i, val) => setEditChapters(p => p.map((c, idx) => idx === i ? {...c, title: val} : c));
+            const removeItem = (i) => setEditChapters(p => p.filter((_, idx) => idx !== i));
+            const moveItem = (i, dir) => setEditChapters(p => {
+                const arr = [...p];
+                const j = i + dir;
+                if (j < 0 || j >= arr.length) return arr;
+                const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+                return arr;
+            });
+
+            const applyBulk = () => {
+                const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
+                const parsed = lines.map((line, i) => ({
+                    type: isPart(line) ? "part" : "chapter",
+                    title: line,
+                    id: Date.now() + i + Math.random()
+                }));
                 if (parsed.length > 0) { setEditChapters(parsed); setInputMode("individual"); }
             };
 
-            const handleSave = function() {
-                var updated = Object.assign({}, book, { chapters: editChapters });
-                onUpdateBook(updated);
+            const handleSave = () => {
+                onUpdateBook({...book, chapters: editChapters});
                 showToast("목차가 저장되었습니다! ✨");
             };
 
-            var partCount = editChapters.filter(function(c) { return c.type === "part"; }).length;
-            var chCount = editChapters.filter(function(c) { return c.type !== "part"; }).length;
+            const partCount = editChapters.filter(c => c.type === "part").length;
+            const chCount = editChapters.filter(c => c.type !== "part").length;
 
             return (
                 <div>
@@ -516,42 +523,41 @@
                     {inputMode === "bulk" ? (
                         <div class="mb-3">
                             <div class="bg-[#f0faf7] rounded-lg p-3 mb-2 text-xs text-[#7c6fa0] border border-[#ccefe8]">
-                                💡 "1부"로 시작하면 부(Part)로, 나머지는 챕터로 자동 구분됩니다
+                                💡 "1부", "2부" 처럼 숫자+부로 시작하면 부(Part)로, 나머지는 챕터로 자동 구분됩니다
                             </div>
                             <textarea rows="8"
-                                placeholder={"1부 습관의 기초\n1장 작은 변화의 힘\n2장 정체성 기반 습관\n2부 습관 만들기\n1장 실행 의도\n2장 환경 설계\n..."}
+                                placeholder={"1부 습관의 기초\n1장 작은 변화의 힘\n2장 정체성 기반 습관\n2부 습관 만들기\n1장 실행 의도\n2장 환경 설계"}
                                 class="w-full p-3 bg-gray-50 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#86c5b0] resize-none"
-                                value={bulkText} onChange={function(e) { setBulkText(e.target.value); }}></textarea>
+                                value={bulkText} onChange={e => setBulkText(e.target.value)}></textarea>
                             {bulkText.trim() && (
                                 <button onClick={applyBulk}
                                     class="mt-2 w-full py-2 rounded-lg bg-[#f0faf7] text-[#7c6fa0] text-xs font-bold border border-[#b0dfd4] hover:bg-[#d4ede7]">
-                                    ✨ {bulkText.split("\n").filter(function(l) { return l.trim(); }).length}개 항목 적용
+                                    ✨ {bulkText.split("\n").filter(l => l.trim()).length}개 항목 적용
                                 </button>
                             )}
                         </div>
                     ) : (
                         <div class="space-y-1.5 max-h-72 overflow-y-auto mb-3">
-                            {editChapters.map(function(ch, i) {
-                                return (
-                                    <div key={ch.id || i} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-[#f0faf7] border border-[#b0dfd4]" : "bg-gray-50 border border-gray-100 ml-4")}>
-                                        <span class="text-xs flex-shrink-0">{ch.type==="part" ? "📂" : "📄"}</span>
-                                        <input type="text" placeholder={ch.type==="part" ? "부 제목" : "챕터 제목"}
-                                            class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
-                                            style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
-                                            value={ch.title} onChange={function(e) { updateItem(i, e.target.value); }} />
-                                        <button onClick={function() { moveItem(i, -1); }} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
-                                        <button onClick={function() { moveItem(i, 1); }} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
-                                        <button onClick={function() { removeItem(i); }} class="text-red-300 hover:text-red-500 text-xs px-1">×</button>
-                                    </div>
-                                );
-                            })}
+                            {editChapters.map((ch, i) => (
+                                <div key={ch.id} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-[#f0faf7] border border-[#b0dfd4]" : "bg-gray-50 border border-gray-100 ml-4")}>
+                                    <span class="text-xs flex-shrink-0">{ch.type==="part" ? "📂" : "📄"}</span>
+                                    <input type="text" placeholder={ch.type==="part" ? "부 제목" : "챕터 제목"}
+                                        class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
+                                        style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
+                                        value={ch.title}
+                                        onChange={e => updateItem(i, e.target.value)} />
+                                    <button onClick={() => moveItem(i, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
+                                    <button onClick={() => moveItem(i, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
+                                    <button onClick={() => removeItem(i)} class="text-red-300 hover:text-red-500 text-xs px-1">×</button>
+                                </div>
+                            ))}
                         </div>
                     )}
 
                     <div class="flex gap-2 mb-3">
-                        <button onClick={function() { addItem("part"); }}
+                        <button onClick={() => addItem("part")}
                             class="flex-1 py-2 rounded-lg border border-dashed border-[#86c5b0] text-[#7c6fa0] text-xs font-bold hover:bg-[#f0faf7]">+ 부 추가</button>
-                        <button onClick={function() { addItem("chapter"); }}
+                        <button onClick={() => addItem("chapter")}
                             class="flex-1 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 text-xs font-bold hover:bg-gray-50">+ 챕터 추가</button>
                     </div>
                     <button onClick={handleSave}
