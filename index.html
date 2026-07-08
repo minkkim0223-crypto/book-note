@@ -137,6 +137,28 @@
             return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
         };
 
+        // 부-장 목록에 "기록 가능 여부(_recordable)"를 계산해서 붙여준다.
+        // - 장(chapter)은 항상 기록 가능
+        // - 부(part)는 그 아래에 딸린 장이 하나도 없을 때만 기록 가능 (챕터 없이 부 자체에 기록하는 경우)
+        const annotateRecordable = (chapters) => {
+            const list = chapters || [];
+            const result = [];
+            let i = 0;
+            while (i < list.length) {
+                const item = list[i];
+                if (item.type === "part") {
+                    let j = i + 1;
+                    let childCount = 0;
+                    while (j < list.length && list[j].type !== "part") { childCount++; j++; }
+                    result.push({ ...item, _recordable: childCount === 0 });
+                } else {
+                    result.push({ ...item, _recordable: true });
+                }
+                i++;
+            }
+            return result;
+        };
+
         // ─── 별점 컴포넌트 ────────────────────────────────────────
         function StarRating({ value, onChange, readonly }) {
             const [hover, setHover] = useState(0);
@@ -509,6 +531,67 @@
                 });
             };
 
+            // 특정 챕터를 원하는 '부' 아래로(또는 부 없음으로) 이동시킨다.
+            // targetPartEid가 null이면 가장 위(첫 번째 부 앞, 즉 부 없음)로 이동.
+            const moveToPart = (chapterEid, targetPartEid) => {
+                setSaved(false);
+                setEditChapters(prev => {
+                    const item = prev.find(c => c._eid === chapterEid);
+                    if (!item) return prev;
+                    const without = prev.filter(c => c._eid !== chapterEid);
+
+                    if (!targetPartEid) {
+                        const firstPartIdx = without.findIndex(c => c.type === "part");
+                        if (firstPartIdx === -1) return [...without, item];
+                        const arr = [...without];
+                        arr.splice(firstPartIdx, 0, item);
+                        return arr;
+                    }
+
+                    const partIdx = without.findIndex(c => c._eid === targetPartEid);
+                    if (partIdx === -1) return prev;
+                    let endIdx = partIdx + 1;
+                    while (endIdx < without.length && without[endIdx].type !== "part") endIdx++;
+                    const arr = [...without];
+                    arr.splice(endIdx, 0, item);
+                    return arr;
+                });
+            };
+
+            // 특정 '부' 그룹의 맨 끝에 새 챕터를 바로 추가한다.
+            const addChapterToPart = (targetPartEid) => {
+                setSaved(false);
+                const newItem = { type: "chapter", title: "", id: Date.now() + Math.random(), _eid: makeEid() };
+                setEditChapters(prev => {
+                    const partIdx = prev.findIndex(c => c._eid === targetPartEid);
+                    if (partIdx === -1) return [...prev, newItem];
+                    let endIdx = partIdx + 1;
+                    while (endIdx < prev.length && prev[endIdx].type !== "part") endIdx++;
+                    const arr = [...prev];
+                    arr.splice(endIdx, 0, newItem);
+                    return arr;
+                });
+            };
+
+            // editChapters를 [부 없이 맨 앞에 있는 챕터들] + [부별 그룹] 으로 묶어준다.
+            const buildGroups = (items) => {
+                const leading = [];
+                const groups = [];
+                let current = null;
+                items.forEach(it => {
+                    if (it.type === "part") {
+                        if (current) groups.push(current);
+                        current = { part: it, children: [] };
+                    } else if (current) {
+                        current.children.push(it);
+                    } else {
+                        leading.push(it);
+                    }
+                });
+                if (current) groups.push(current);
+                return { leading, groups };
+            };
+
             const applyBulk = () => {
                 const lines = bulkText.split("\n").map(l => l.trim()).filter(Boolean);
                 if (!lines.length) return;
@@ -546,6 +629,34 @@
 
             const partCount = editChapters.filter(c => c.type === "part").length;
             const chCount = editChapters.filter(c => c.type !== "part").length;
+
+            const renderChapterRow = (ch, partOptions) => (
+                <div key={ch._eid} class="flex flex-col gap-1 p-2 rounded-lg bg-gray-50 border border-gray-100 ml-4">
+                    <div class="flex gap-1.5 items-center">
+                        <span class="text-xs flex-shrink-0">📄</span>
+                        <input type="text"
+                            placeholder="챕터 제목"
+                            class="flex-1 bg-transparent text-sm focus:outline-none font-bold text-gray-700"
+                            value={ch.title}
+                            onChange={e => updateItem(ch._eid, e.target.value)} />
+                        <button onClick={() => moveItem(ch._eid, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
+                        <button onClick={() => moveItem(ch._eid, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
+                        <button onClick={() => removeItem(ch._eid)} class="text-red-300 hover:text-red-500 text-xs px-2 font-black text-sm">×</button>
+                    </div>
+                    {partOptions.length > 0 && (
+                        <div class="flex items-center gap-1.5 pl-5">
+                            <span class="text-[10px] text-gray-400 font-bold flex-shrink-0">소속 부:</span>
+                            <select
+                                class="text-[11px] bg-white border border-gray-200 rounded px-1.5 py-0.5 text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#86c5b0]"
+                                value={ch._currentPartEid || ""}
+                                onChange={e => moveToPart(ch._eid, e.target.value || null)}>
+                                <option value="">(부 없음)</option>
+                                {partOptions.map(p => <option key={p._eid} value={p._eid}>{p.title || "(제목 없음)"}</option>)}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            );
 
             return (
                 <div>
@@ -588,24 +699,44 @@
                                 <div class="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
                                     목차가 없어요. 아래 버튼으로 부/챕터를 추가해보세요!
                                 </div>
-                            ) : (
-                                <div class="space-y-1.5 max-h-72 overflow-y-auto">
-                                    {editChapters.map((ch) => (
-                                        <div key={ch._eid} class={"flex gap-1.5 items-center p-2 rounded-lg " + (ch.type==="part" ? "bg-[#f0faf7] border border-[#b0dfd4]" : "bg-gray-50 border border-gray-100 ml-4")}>
-                                            <span class="text-xs flex-shrink-0">{ch.type==="part" ? "📂" : "📄"}</span>
-                                            <input type="text"
-                                                placeholder={ch.type==="part" ? "부 제목" : "챕터 제목"}
-                                                class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
-                                                style={{color: ch.type==="part" ? "#7c6fa0" : "#374151"}}
-                                                value={ch.title}
-                                                onChange={e => updateItem(ch._eid, e.target.value)} />
-                                            <button onClick={() => moveItem(ch._eid, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
-                                            <button onClick={() => moveItem(ch._eid, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
-                                            <button onClick={() => removeItem(ch._eid)} class="text-red-300 hover:text-red-500 text-xs px-2 font-black text-sm">×</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            ) : (() => {
+                                const { leading, groups } = buildGroups(editChapters);
+                                const partOptions = groups.map(g => g.part);
+                                // 각 챕터에 현재 소속된 부의 _eid를 표시용으로 붙여준다
+                                const withCurrentPart = (children, partEid) => children.map(c => ({...c, _currentPartEid: partEid}));
+
+                                return (
+                                    <div class="space-y-1.5 max-h-96 overflow-y-auto pr-1">
+                                        {leading.map(ch => renderChapterRow({...ch, _currentPartEid: ""}, partOptions))}
+                                        {groups.map(g => (
+                                            <div key={g.part._eid}>
+                                                <div class="flex gap-1.5 items-center p-2 rounded-lg bg-[#f0faf7] border border-[#b0dfd4]">
+                                                    <span class="text-xs flex-shrink-0">📂</span>
+                                                    <input type="text"
+                                                        placeholder="부 제목"
+                                                        class="flex-1 bg-transparent text-sm focus:outline-none font-bold"
+                                                        style={{color:"#7c6fa0"}}
+                                                        value={g.part.title}
+                                                        onChange={e => updateItem(g.part._eid, e.target.value)} />
+                                                    <button onClick={() => moveItem(g.part._eid, -1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▲</button>
+                                                    <button onClick={() => moveItem(g.part._eid, 1)} class="text-gray-300 hover:text-gray-500 text-xs px-1">▼</button>
+                                                    <button onClick={() => removeItem(g.part._eid)} class="text-red-300 hover:text-red-500 text-xs px-2 font-black text-sm">×</button>
+                                                </div>
+                                                {g.children.length === 0 && (
+                                                    <p class="text-[10px] text-gray-400 ml-5 mt-1 mb-1">📌 챕터 없이 이 부에 바로 기록할 수 있어요</p>
+                                                )}
+                                                <div class="space-y-1.5 mt-1">
+                                                    {withCurrentPart(g.children, g.part._eid).map(ch => renderChapterRow(ch, partOptions))}
+                                                </div>
+                                                <button onClick={() => addChapterToPart(g.part._eid)}
+                                                    class="ml-4 mt-1 mb-2 text-[11px] text-[#7c6fa0] font-bold px-2 py-1 rounded border border-dashed border-[#86c5b0] hover:bg-[#f0faf7]">
+                                                    + 이 부에 챕터 추가
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
 
@@ -613,7 +744,7 @@
                         <button onClick={() => addItem("part")}
                             class="flex-1 py-2 rounded-lg border border-dashed border-[#86c5b0] text-[#7c6fa0] text-xs font-bold hover:bg-[#f0faf7]">+ 부 추가</button>
                         <button onClick={() => addItem("chapter")}
-                            class="flex-1 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 text-xs font-bold hover:bg-gray-50">+ 챕터 추가</button>
+                            class="flex-1 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 text-xs font-bold hover:bg-gray-50">+ 챕터 추가 (목록 끝)</button>
                     </div>
                     <button onClick={handleSave}
                         class={"w-full py-3 rounded-xl font-black text-sm " + (saved ? "bg-green-500 text-white" : "bg-[#7c6fa0] hover:bg-[#6b5f8f] text-white")}>
@@ -629,7 +760,8 @@
             const [showFinishReview, setShowFinishReview] = useState(false);
 
             const chapters = book.chapters || [];
-            const chapterOnly = chapters.filter(c => c.type !== "part");
+            const annotated = annotateRecordable(chapters);
+            const chapterOnly = annotated.filter(c => c._recordable);
             const doneCount = chapterOnly.filter(c => c.record && c.record.readDate).length;
             const progress = chapterOnly.length > 0 ? Math.round((doneCount / chapterOnly.length) * 100) : 0;
 
@@ -717,8 +849,28 @@
                                     <p class="text-gray-500 font-bold">등록된 챕터가 없어요</p>
                                     <p class="text-gray-400 text-sm mt-1">책 등록 시 목차를 추가해보세요</p>
                                 </div>
-                            ) : chapters.map((ch, i) => {
+                            ) : annotated.map((ch, i) => {
                                 if (ch.type === "part") {
+                                    if (ch._recordable) {
+                                        // 챕터가 없는 부: 클릭해서 바로 기록할 수 있도록 표시
+                                        const isDone = ch.record && ch.record.readDate;
+                                        return (
+                                            <div key={ch.id || i} onClick={() => setSelectedChapter(ch)}
+                                                class={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md mt-3 first:mt-0 ${isDone ? "bg-[#f0faf7] border-[#b0dfd4]" : "bg-white border-[#7c6fa0] hover:border-[#5b8fa8]"}`}>
+                                                <div class={`w-9 h-9 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 ${isDone ? "bg-[#7c6fa0] text-white" : "bg-[#f0faf7] text-[#7c6fa0]"}`}>
+                                                    {isDone ? "✓" : "📂"}
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class={`font-black text-sm ${isDone ? "text-[#5a4f7a]" : "text-[#7c6fa0]"}`}>{ch.title}</p>
+                                                    <p class="text-[10px] text-gray-400 mt-0.5">챕터 없이 이 부 자체에 기록해요</p>
+                                                    {isDone && ch.record.keywords && (
+                                                        <p class="text-xs text-[#7c6fa0] mt-0.5 truncate">🔑 {ch.record.keywords}</p>
+                                                    )}
+                                                </div>
+                                                <span class="text-gray-300 text-sm">▶</span>
+                                            </div>
+                                        );
+                                    }
                                     return (
                                         <div key={ch.id || i} class="bg-[#7c6fa0] px-4 py-2.5 rounded-xl mt-3 first:mt-0">
                                             <p class="font-black text-white text-sm">📂 {ch.title}</p>
@@ -742,7 +894,7 @@
                                     </div>
                                 );
                             })}
-                            {chapters.filter(c => c.type !== "part").length > 0 && progress === 100 && book.status !== "done" && (
+                            {chapterOnly.length > 0 && progress === 100 && book.status !== "done" && (
                                 <button onClick={() => setShowFinishReview(true)}
                                     class="w-full py-4 mt-2 rounded-xl font-black text-white bg-gradient-to-r from-[#7c6fa0] to-[#5b8fa8] shadow-md text-base">
                                     🏁 모든 챕터 완료! 완독 리뷰 작성하기
@@ -909,7 +1061,7 @@
                     {viewMode === "stack" && filtered.length > 0 && (
                         <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {filtered.map(function(book) {
-                                var chapterOnly = (book.chapters || []).filter(function(c) { return c.type !== "part"; });
+                                var chapterOnly = annotateRecordable(book.chapters || []).filter(function(c) { return c._recordable; });
                                 var doneCount = chapterOnly.filter(function(c) { return c.record && c.record.readDate; }).length;
                                 var progress = chapterOnly.length > 0 ? Math.round((doneCount / chapterOnly.length) * 100) : 0;
                                 return (
@@ -938,7 +1090,7 @@
                     {viewMode === "list" && filtered.length > 0 && (
                         <div class="space-y-3">
                             {filtered.map(function(book) {
-                                var chapterOnly = (book.chapters || []).filter(function(c) { return c.type !== "part"; });
+                                var chapterOnly = annotateRecordable(book.chapters || []).filter(function(c) { return c._recordable; });
                                 var doneCount = chapterOnly.filter(function(c) { return c.record && c.record.readDate; }).length;
                                 var progress = chapterOnly.length > 0 ? Math.round((doneCount / chapterOnly.length) * 100) : 0;
                                 return (
@@ -1276,11 +1428,24 @@
                 lines.push("");
 
                 let currentPart = null;
-                chapters.forEach((ch) => {
+                const annotated = annotateRecordable(chapters);
+                annotated.forEach((ch) => {
                     if (ch.type === "part") {
                         currentPart = ch.title;
                         lines.push("### 📂 " + ch.title);
                         lines.push("");
+                        if (ch._recordable) {
+                            // 챕터 없이 부 자체에 바로 기록한 경우
+                            if (ch.record && (ch.record.keywords || ch.record.summary || ch.record.myThought)) {
+                                if (ch.record.keywords) { lines.push("🔑 **핵심 키워드:** " + ch.record.keywords); lines.push(""); }
+                                if (ch.record.summary) { lines.push("📝 **내용 요약**"); lines.push(""); lines.push(ch.record.summary); lines.push(""); }
+                                if (ch.record.myThought) { lines.push("💭 **나의 생각**"); lines.push(""); lines.push(ch.record.myThought); lines.push(""); }
+                                if (ch.record.readDate) { lines.push("_읽은 날: " + ch.record.readDate + "_"); lines.push(""); }
+                            } else {
+                                lines.push("_(기록 없음)_");
+                                lines.push("");
+                            }
+                        }
                     } else {
                         const prefix = currentPart ? "#### " : "### ";
                         lines.push(prefix + ch.title);
@@ -1415,7 +1580,7 @@
                                         <div>
                                             {(() => {
                                                 const book = books.find(b => b.id === selectedBookId);
-                                                const chOnly = (book.chapters||[]).filter(c=>c.type!=="part");
+                                                const chOnly = annotateRecordable(book.chapters||[]).filter(c=>c._recordable);
                                                 const done = chOnly.filter(c=>c.record&&c.record.readDate).length;
                                                 return (
                                                     <div class="bg-white p-3 rounded-lg border border-gray-200 mb-3 text-xs text-gray-500">
